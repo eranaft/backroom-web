@@ -559,12 +559,22 @@ body{
 .mini{
   width:min(1120px, 96vw);
   height:66px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
   padding: 0 14px;
   gap:14px;
+
+  display:grid;
+  grid-template-columns: 1fr auto 1fr; /* центр всегда центр */
+  align-items:center;
 }
+/* --- FIX: no hover jumps on touch devices --- */
+@media (hover: none){
+  .btn:hover, .tab:hover, .chip:hover, .smallBtn:hover, .item:hover, .chapter:hover, .exitBtn:hover{
+    transform: none !important;
+  }
+}
+.miniLeft{ min-width:0; justify-self:start; }
+.miniCtrls{ justify-self:center; display:flex; gap:10px; }
+.miniRight{ justify-self:end; width:260px; }
 .miniLeft{ min-width:0; }
 .miniMeta{ min-width:0; }
 .miniName{
