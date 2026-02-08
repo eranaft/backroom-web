@@ -112,24 +112,51 @@
 
     <!-- MINI PLAYER -->
     <footer class="mini glass reflectMini" id="mini">
-      <div class="miniLeft">
-        <div class="miniMeta">
-          <div class="miniName" id="mName">No track</div>
-          <div class="miniHint" id="mHint">—</div>
-        </div>
-      </div>
+  <!-- scrub area (тонкая неоновая полоса сверху) -->
+  <div class="miniScrub" id="scrub" aria-label="Перемотка">
+    <div class="miniTrack"></div>
+    <div class="miniProgress" id="prog"></div>
+    <div class="miniKnob" id="knob"></div>
+  </div>
 
-   <div class="miniCtrls">
-  <button class="iconBtn" id="prev" aria-label="Назад">⏮</button>
-  <button class="iconBtn main" id="toggle" aria-label="Играть">⏵</button>
-  <button class="iconBtn" id="next" aria-label="Вперёд">⏭</button>
-</div>
+  <div class="miniLeft">
+    <div class="miniMeta">
+      <div class="miniName" id="mName">No track</div>
+      <div class="miniHint" id="mHint">—</div>
+    </div>
+  </div>
 
+  <!-- КНОПКИ ВПРАВО -->
+  <div class="miniCtrls" aria-label="Управление">
+    <button class="pBtn" id="prev" aria-label="Предыдущий">
+      <svg viewBox="0 0 24 24" class="ico" aria-hidden="true">
+        <path d="M6 6h2v12H6V6zm3 6 12-7v14L9 12z"></path>
+      </svg>
+    </button>
 
-      <div class="miniRight">
-        <audio id="audio" preload="metadata"></audio>
-      </div>
-    </footer>
+    <button class="pBtn pMain" id="toggle" aria-label="Играть/Пауза">
+      <!-- play -->
+      <svg viewBox="0 0 24 24" class="ico playIco" aria-hidden="true">
+        <path d="M9 7l10 5-10 5V7z"></path>
+      </svg>
+      <!-- pause -->
+      <svg viewBox="0 0 24 24" class="ico pauseIco" aria-hidden="true">
+        <path d="M7 6h4v12H7V6zm6 0h4v12h-4V6z"></path>
+      </svg>
+    </button>
+
+    <button class="pBtn" id="next" aria-label="Следующий">
+      <svg viewBox="0 0 24 24" class="ico" aria-hidden="true">
+        <path d="M16 6h2v12h-2V6zM3 5l12 7-12 7V5z"></path>
+      </svg>
+    </button>
+  </div>
+
+  <div class="miniRight">
+    <audio id="audio" preload="metadata"></audio>
+  </div>
+</footer>
+
   </div>
 
   <script>
