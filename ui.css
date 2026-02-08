@@ -512,3 +512,106 @@ body{
   .miniRight{ display:none; }
   .title{ font-size:42px; }
 }
+
+/* ===== Mini player: neon scrub bar + icon controls ===== */
+.mini{
+  position: relative;
+  overflow: hidden;
+}
+
+/* тонкий неоновый "ползунок" сверху всей плитки */
+.mini::before{
+  content:"";
+  position:absolute;
+  left:12px;
+  right:12px;
+  top:10px;
+  height:2px;
+  border-radius:999px;
+  background: rgba(255,255,255,.08);
+  pointer-events:none;
+}
+
+/* Заполненная часть (переливающаяся) */
+.miniProgress{
+  position:absolute;
+  left:12px;
+  top:10px;
+  height:2px;
+  width: 0%;
+  border-radius:999px;
+  background: linear-gradient(90deg, var(--c1), var(--c2), var(--c3), var(--c4), var(--c5), var(--c1));
+  background-size: 240% 100%;
+  animation: progFlow 10s ease-in-out infinite;
+  box-shadow:
+    0 0 10px rgba(0,220,255,.18),
+    0 0 16px rgba(140,90,255,.12);
+  pointer-events:none;
+}
+@keyframes progFlow{
+  0%{ background-position: 0% 50%; }
+  50%{ background-position: 100% 50%; }
+  100%{ background-position: 0% 50%; }
+}
+
+/* Ползунок-ручка */
+.miniKnob{
+  position:absolute;
+  top:10px;
+  width:10px;
+  height:10px;
+  border-radius:999px;
+  transform: translate(-50%, -50%);
+  background: rgba(255,255,255,.86);
+  box-shadow:
+    0 0 10px rgba(0,220,255,.18),
+    0 0 18px rgba(255,80,160,.10);
+  opacity:.9;
+  pointer-events:none;
+}
+
+/* Зона для drag */
+.miniScrub{
+  position:absolute;
+  left:12px;
+  right:12px;
+  top:4px;
+  height:20px;
+  cursor:pointer;
+  touch-action: none;
+}
+
+/* Иконки */
+.iconBtn{
+  height:40px;
+  width:44px;
+  border-radius: 14px;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.12);
+  color: rgba(255,255,255,.82);
+  cursor:pointer;
+  font-weight:300;
+  font-size:18px;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease;
+  user-select:none;
+}
+.iconBtn:hover{
+  border-color: rgba(255,255,255,.16);
+  transform: translateY(-1px);
+}
+.iconBtn:active{ transform: translateY(0) scale(.99); }
+.iconBtn.main{
+  width:54px;
+  border-color: rgba(0,220,255,.18);
+  box-shadow: 0 0 16px rgba(0,220,255,.10);
+  font-size:19px;
+}
+
+/* На touch убираем hover-движения */
+@media (hover:none){
+  .iconBtn:hover{ transform:none; }
+}
