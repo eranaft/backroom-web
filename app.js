@@ -2,6 +2,8 @@ const statusEl = document.getElementById('status');
 const timerEl = document.getElementById('timer');
 const metaEl = document.getElementById('meta');
 const wrapEl = document.getElementById('wrap');
+const canvas = document.getElementById('stars');
+const ctx = canvas.getContext('2d', { alpha: true });
 
 function fmt(ms){
   const s = Math.max(0, Math.floor(ms/1000));
@@ -20,8 +22,6 @@ async function fetchState(){
 
 function render(st){
   lastState = st;
-
-  // CLOSED/OPEN класс на body для палитры и поведения звёзд
   document.body.classList.toggle('is-closed', !st.isOpen);
 
   if (st.isOpen){
@@ -58,126 +58,165 @@ async function tick(){
   }
 }
 
-/* ===== WARP + STARS: плавный разгон + “чем дольше — тем сильнее” ===== */
+/* ====== warp + tilt (fallback работает в Telegram) ====== */
 let hoveringOpen = false;
-let warp = 0;
-let starsBoost = 0;
-
-let hold = 0;
+let warp = 0;            // 0..1
+let hold = 0;            // 0..1.6
+let tiltForce = 0;       // 0..1
+let tiltX = 0;           // deg
+let tiltY = 0;           // deg
 let lastTs = performance.now();
 
-function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function smoothstep(t){ return t*t*(3-2*t); }
 
 function setVars(){
   document.body.style.setProperty('--warp', warp.toFixed(3));
-  document.body.style.setProperty('--starsBoost', starsBoost.toFixed(3));
-
-  // скорость неона: базово быстрее, а при ускорении — ещё быстрее
-  // (меньше секунд => быстрее анимация)
-  const base = lastState?.isOpen ? 12 : 10; // по умолчанию быстрее в целом
-  const min = lastState?.isOpen ? 4.8 : 6.0; // на пике
-  const k = clamp(warp, 0, 1);
-  const dur = base - (base - min) * k; // от base к min
-  document.body.style.setProperty('--neonDur', `${dur.toFixed(2)}s`);
-}
-
-let tiltForce = 0;   // 0..1 (сила наклона)
-let tiltX = 0;       // deg
-let tiltY = 0;       // deg
-
-function loop(ts){
-  const dt = Math.min(0.05, (ts - lastTs) / 1000);
-  lastTs = ts;
-
-  // эффект включается если: hover OPEN ИЛИ tilt (на телефоне)
-  const engaged = (hoveringOpen && lastState?.isOpen) || (tiltForce > 0.02 && lastState?.isOpen);
-
-  if (engaged) hold = clamp(hold + dt * 0.95, 0, 1.6);
-  else hold = clamp(hold - dt * 1.35, 0, 1.6);
-
-  const t = hold / 1.6;                 // 0..1
-  const easeUp = t * t * (3 - 2 * t);   // smoothstep
-
-  // добавляем вклад от наклона (чем сильнее наклон — тем сильнее разгон)
-  const tiltBoost = tiltForce * 0.55;   // 0..0.55
-
-  const targetWarp  = (lastState?.isOpen ? (0.18 + 1.05 * easeUp + tiltBoost) : 0);
-  const targetStars = (lastState?.isOpen ? (0.10 + 1.15 * easeUp + tiltBoost) : 0);
-
-  warp += (targetWarp - warp) * 0.06;
-  starsBoost += (targetStars - starsBoost) * 0.045;
-
-  // наклон текста (плавно)
   document.body.style.setProperty('--tiltX', `${tiltX.toFixed(2)}deg`);
   document.body.style.setProperty('--tiltY', `${tiltY.toFixed(2)}deg`);
 
-  setVars();
-  requestAnimationFrame(loop);
+  // Скорость “перелива” градиента: быстрее всегда, ещё быстрее при warp/tilt
+  const engaged = clamp(warp, 0, 1);
+  const base = (lastState?.isOpen ? 10.5 : 9.5);  // быстрее в целом
+  const min  = (lastState?.isOpen ? 3.8  : 5.5);  // на пике
+  const dur = base - (base - min) * engaged;
+  document.body.style.setProperty('--neonSpeed', `${dur.toFixed(2)}s`);
+
+  // Hue тоже ускоряем (ощутимый перелив цвета)
+  const hue = (lastState?.isOpen ? (engaged * 140) : 0);
+  document.body.style.setProperty('--hue', `${hue.toFixed(1)}deg`);
 }
 
-function onEnter(){
-  if (lastState?.isOpen) hoveringOpen = true;
-}
-function onLeave(){
-  hoveringOpen = false;
-}
+function onEnter(){ if (lastState?.isOpen) hoveringOpen = true; }
+function onLeave(){ hoveringOpen = false; tiltForce *= 0.85; }
 
 statusEl.addEventListener('mouseenter', onEnter);
 statusEl.addEventListener('mouseleave', onLeave);
-
-// mobile (tap hold)
 statusEl.addEventListener('touchstart', onEnter, { passive:true });
 statusEl.addEventListener('touchend', onLeave, { passive:true });
 statusEl.addEventListener('touchcancel', onLeave, { passive:true });
 
-/* ===== GYRO (iOS needs permission) ===== */
-async function requestMotionPermission(){
-  try{
-    if (typeof DeviceOrientationEvent !== 'undefined' &&
-        typeof DeviceOrientationEvent.requestPermission === 'function') {
-      const res = await DeviceOrientationEvent.requestPermission();
-      // 'granted' or 'denied'
-      return res === 'granted';
+/* Touch/mouse tilt fallback */
+function applyPointerTilt(x, y){
+  const r = wrapEl.getBoundingClientRect();
+  const nx = (x - (r.left + r.width/2)) / (r.width/2);
+  const ny = (y - (r.top + r.height/2)) / (r.height/2);
+
+  tiltY = clamp(nx, -1, 1) * 8;   // deg
+  tiltX = clamp(-ny, -1, 1) * 6;  // deg
+  tiltForce = clamp(Math.sqrt(nx*nx + ny*ny), 0, 1);
+}
+
+window.addEventListener('mousemove', (e) => applyPointerTilt(e.clientX, e.clientY), { passive:true });
+window.addEventListener('touchmove', (e) => {
+  const t = e.touches?.[0];
+  if (t) applyPointerTilt(t.clientX, t.clientY);
+}, { passive:true });
+
+/* ====== Canvas stars (random, smooth) ====== */
+let W = 0, H = 0, DPR = 1;
+let stars = [];
+
+function resize(){
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = Math.floor(window.innerWidth);
+  H = Math.floor(window.innerHeight);
+  canvas.width = Math.floor(W * DPR);
+  canvas.height = Math.floor(H * DPR);
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  // количество звёзд зависит от размера
+  const count = Math.floor((W * H) / 9000); // плотнее/реже можно крутить
+  stars = new Array(count).fill(0).map(() => ({
+    x: Math.random() * W,
+    y: Math.random() * H,
+    r: 0.6 + Math.random() * 1.6,
+    baseA: 0.15 + Math.random() * 0.45,
+    tw: 0.6 + Math.random() * 2.2,     // скорость мерцания
+    ph: Math.random() * Math.PI * 2,   // фаза
+    vx: (Math.random() - 0.5) * 0.08,  // лёгкий дрейф
+    vy: (Math.random() - 0.5) * 0.08
+  }));
+}
+window.addEventListener('resize', resize);
+resize();
+
+function drawStars(time){
+  ctx.clearRect(0, 0, W, H);
+
+  const open = !!lastState?.isOpen;
+
+  // в OPEN звёзды “летят” (скорость от warp), в CLOSED — стоят, только twinkle
+  const speed = open ? (0.15 + warp * 2.3) : 0;
+  const twMul = open ? (1.0 + warp * 1.2) : 0.9;
+
+  for (let i=0;i<stars.length;i++){
+    const s = stars[i];
+
+    // движение только в OPEN
+    if (open){
+      s.x += (s.vx * speed);
+      s.y += (s.vy * speed);
+
+      // wrap
+      if (s.x < -20) s.x = W + 20;
+      if (s.x > W + 20) s.x = -20;
+      if (s.y < -20) s.y = H + 20;
+      if (s.y > H + 20) s.y = -20;
     }
-    return true; // Android/others often don't need it
-  }catch{
-    return false;
+
+    // ПЛАВНОЕ мерцание (без прыжков)
+    const tw = (Math.sin(time * 0.001 * s.tw * twMul + s.ph) + 1) * 0.5; // 0..1
+    const a = s.baseA * (0.55 + tw * 0.75);
+
+    // в CLOSED делаем более “бордовое” сияние слегка
+    const isClosed = !open;
+    const glow = isClosed ? 0.9 : 1.0;
+
+    ctx.beginPath();
+    ctx.fillStyle = `rgba(255,255,255,${a})`;
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+    ctx.fill();
+
+    // мягкий glow
+    ctx.beginPath();
+    ctx.fillStyle = isClosed
+      ? `rgba(255,90,110,${a * 0.18 * glow})`
+      : `rgba(88,242,255,${a * 0.14 * glow})`;
+    ctx.arc(s.x, s.y, s.r * 2.8, 0, Math.PI*2);
+    ctx.fill();
   }
 }
 
-// просим разрешение при первом “осознанном” касании (без спама)
-let motionEnabled = false;
-async function enableMotionOnce(){
-  if (motionEnabled) return;
-  const ok = await requestMotionPermission();
-  motionEnabled = ok;
+/* ====== main loop ====== */
+function loop(ts){
+  const dt = Math.min(0.05, (ts - lastTs) / 1000);
+  lastTs = ts;
 
-  if (ok){
-    window.addEventListener('deviceorientation', (e) => {
-      // gamma: left/right, beta: front/back
-      const g = typeof e.gamma === 'number' ? e.gamma : 0;
-      const b = typeof e.beta === 'number' ? e.beta : 0;
+  const engaged = (hoveringOpen && lastState?.isOpen) || (tiltForce > 0.02 && lastState?.isOpen);
 
-      // ограничим, чтобы не шатало
-      const gx = clamp(g, -18, 18);
-      const bx = clamp(b, -18, 18);
+  // hold “нарастает” пока engaged
+  if (engaged) hold = clamp(hold + dt * 0.95, 0, 1.6);
+  else hold = clamp(hold - dt * 1.35, 0, 1.6);
 
-      // наклон текста (в градусах)
-      tiltY = gx * 0.35;      // rotateY
-      tiltX = -bx * 0.22;     // rotateX
+  const t = smoothstep(hold / 1.6); // 0..1
 
-      // сила эффекта = насколько сильно наклонён телефон
-      const mag = Math.sqrt(gx*gx + bx*bx) / 25; // ~0..1
-      tiltForce = clamp(mag, 0, 1);
-    }, { passive:true });
-  }
+  const tiltBoost = tiltForce * 0.55;
+  const targetWarp = (lastState?.isOpen ? clamp(0.10 + 1.10 * t + tiltBoost, 0, 1) : 0);
+
+  warp += (targetWarp - warp) * 0.06;
+
+  // tilt затухает сам
+  tiltForce *= 0.985;
+
+  setVars();
+  drawStars(ts);
+
+  requestAnimationFrame(loop);
 }
-
-// триггер на мобиле: тап по экрану или по OPEN
-document.body.addEventListener('touchstart', enableMotionOnce, { passive:true });
-statusEl.addEventListener('touchstart', enableMotionOnce, { passive:true });
 
 requestAnimationFrame(loop);
-
 setInterval(tick, 1000);
 tick();
