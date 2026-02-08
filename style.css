@@ -38,6 +38,9 @@ body{
   color:var(--closed);
   cursor:default;
 }
+.timer{
+  color: rgba(233,233,234,.75);
+}
 
 .timer{
   margin-top:18px;
