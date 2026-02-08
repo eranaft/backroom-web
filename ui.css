@@ -938,7 +938,7 @@ body{
   - Uncomment this entire block
   - Ensure your JS does NOT rely on tabIndicator positioning
 ============================================================ */
-/*
+
 .tabs{
   background: transparent !important;
   border: none !important;
