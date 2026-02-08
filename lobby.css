@@ -1,19 +1,22 @@
 :root{
   --bg:#05060a;
 
-  --warp: 0;        /* 0..1 из JS (теперь отвечает за “чуть быстрее”) */
+  /* управляется из JS */
+  --warp: 0;          /* 0..1 */
   --tiltX: 0deg;
   --tiltY: 0deg;
+  --bgSpeed: 28s;     /* чем больше — тем медленнее */
+  --bgHue: 0deg;      /* hue-rotate для фона */
+  --textGlow: 0.10;   /* 0.10..0.18 примерно */
 
-  /* скорость перелива ФОНА (чем больше — тем медленнее) */
-  --bgSpeed: 28s;
-  --bgHue: 0deg;
-
-  --textGlow: 0.10; /* общая мягкость свечения текста */
+  /* цвета */
+  --closedText: rgba(255,255,255,.26);
+  --timerText: rgba(255,255,255,.55);
+  --metaText: rgba(255,255,255,.34);
 }
 
-*{box-sizing:border-box;}
-html,body{height:100%;}
+*{ box-sizing:border-box; }
+html, body{ height:100%; }
 
 body{
   margin:0;
@@ -23,11 +26,11 @@ body{
   justify-content:center;
   background: var(--bg);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-  letter-spacing:0.08em;
+  letter-spacing: 0.08em;
   overflow:hidden;
 }
 
-/* ===== неоновый фон (очень мягко) ===== */
+/* ===== НЕОНОВЫЙ ФОН (градиент на фоне, не на тексте) ===== */
 .bg-neon{
   position:fixed;
   inset:-40%;
@@ -36,19 +39,27 @@ body{
   opacity: .72;
   transform: translate3d(0,0,0);
   animation: bgFlow var(--bgSpeed) ease-in-out infinite;
+  will-change: transform;
 }
 
 .bg-neon::before{
   content:"";
   position:absolute;
   inset:0;
+
   background:
     radial-gradient(900px 600px at 22% 20%, rgba(88,242,255,.10), transparent 65%),
     radial-gradient(900px 620px at 78% 28%, rgba(179,93,255,.09), transparent 66%),
     radial-gradient(900px 700px at 52% 86%, rgba(255,71,154,.06), transparent 66%),
     linear-gradient(180deg, rgba(0,0,0,.20), rgba(0,0,0,.88));
+
+  /* мягко усиливаем на удержании OPEN */
+  opacity: calc(.58 + var(--warp) * .18);
+
+  /* перелив оттенка фона */
   filter: hue-rotate(var(--bgHue));
-  opacity: calc(.58 + var(--warp) * .18); /* при удержании чуть заметнее, но не ярко */
+
+  will-change: opacity, filter;
 }
 
 @keyframes bgFlow{
@@ -57,7 +68,7 @@ body{
   100% { transform: translate3d(-0.7%, -0.6%, 0) scale(1.02); }
 }
 
-/* CLOSED: тусклее и темнее */
+/* CLOSED: фон тусклее и темнее */
 body.is-closed .bg-neon{
   opacity: .42;
   filter: blur(28px) saturate(120%);
@@ -73,46 +84,26 @@ body.is-closed .bg-neon::before{
   filter: none;
 }
 
-/* ===== canvas stars ===== */
+/* ===== Canvas stars ===== */
 #stars{
   position:fixed;
   inset:0;
   width:100%;
   height:100%;
   pointer-events:none;
-  opacity: 1;
 }
 
-/* ===== transition overlay (для альтернативного входа) ===== */
-.jumpFx{
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-  opacity:0;
-  background:
-    radial-gradient(closest-side at 50% 50%, rgba(255,255,255,.08), transparent 55%),
-    radial-gradient(closest-side at 50% 50%, rgba(88,242,255,.07), transparent 62%),
-    radial-gradient(closest-side at 50% 50%, rgba(179,93,255,.06), transparent 68%);
-  filter: blur(8px);
-  transform: scale(1);
-}
+/* ===== УБИРАЕМ вспышку/пятно при клике OPEN (на всякий) ===== */
+.jumpFx{ display:none !important; }
+body.jumping .jumpFx{ display:none !important; }
 
-body.jumping .jumpFx{
-  animation: jumpFade .55s ease-out forwards;
-}
-
-@keyframes jumpFade{
-  0%   { opacity:0; transform: scale(1); }
-  35%  { opacity:.55; transform: scale(1.06); }
-  100% { opacity:0; transform: scale(1.22); }
-}
-
-/* ===== content ===== */
+/* ===== Контент ===== */
 .wrap{
   position:relative;
   z-index:2;
   width:min(720px, 92vw);
   text-align:center;
+
   transform: rotateX(var(--tiltX)) rotateY(var(--tiltY));
   transform-style: preserve-3d;
   transition: transform .12s ease-out;
@@ -126,10 +117,11 @@ body.jumping .jumpFx{
   letter-spacing: .14em;
 }
 
-/* OPEN: градиент текста сильнее, но мягко */
+/* ===== OPEN: более выраженный градиент + мягкое свечение ===== */
 .status.open{
   cursor:pointer;
 
+  /* мягкий “богатый” градиент */
   background: linear-gradient(90deg,
     rgba(255,255,255,.98),
     rgba(190,235,255,.92),
@@ -137,18 +129,23 @@ body.jumping .jumpFx{
     rgba(255,255,255,.98)
   );
   background-size: 260% 100%;
-  -webkit-background-clip:text;
-  background-clip:text;
+  -webkit-background-clip: text;
+  background-clip: text;
   color: transparent;
 
+  /* очень медленный перелив */
   animation: textSoft 20s ease-in-out infinite;
 
+  /* свечение — мягкое, регулируется переменной */
   text-shadow:
     0 0 10px rgba(255,255,255, calc(var(--textGlow) * 1.0)),
     0 0 26px rgba(88,242,255, calc(var(--textGlow) * 0.9)),
     0 0 40px rgba(179,93,255, calc(var(--textGlow) * 0.7));
 
-  transition: transform .45s cubic-bezier(.2,.8,.2,1), opacity .35s ease, text-shadow .55s ease;
+  transition:
+    transform .45s cubic-bezier(.2,.8,.2,1),
+    opacity .35s ease,
+    text-shadow .55s ease;
 }
 
 @keyframes textSoft{
@@ -172,7 +169,7 @@ body.jumping .jumpFx{
 }
 
 .status.closed{
-  color: rgba(255,255,255,.26);
+  color: var(--closedText);
   cursor:default;
   text-shadow:none;
 }
@@ -180,7 +177,7 @@ body.jumping .jumpFx{
 .timer{
   margin-top:18px;
   font-weight:200;
-  color: rgba(255,255,255,.55);
+  color: var(--timerText);
   font-size:14px;
   min-height:20px;
 }
@@ -188,6 +185,12 @@ body.jumping .jumpFx{
 .meta{
   margin-top:12px;
   font-weight:200;
-  color: rgba(255,255,255,.34);
+  color: var(--metaText);
   font-size:11px;
+}
+
+/* Мобилка: чуть мягче переходы */
+@media (pointer: coarse){
+  .wrap{ transition: transform .18s ease-out; }
+  .bg-neon{ filter: blur(24px) saturate(130%); }
 }
