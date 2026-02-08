@@ -3,6 +3,10 @@
   --open:#e9e9ea;
   --closed:#6a6a6f;
   --timer:#b7b7bd;
+  
+  --neonDur: 14s;      /* скорость перелива неона (быстрее = меньше секунд) */
+  --tiltX: 0deg;
+  --tiltY: 0deg;
 
   /* дефолт для неона (чтобы не мигало до старта анимации) */
   --n1: rgba(88,242,255,.22);
@@ -107,7 +111,11 @@ body{
   z-index:2;
   width:min(720px, 92vw);
   text-align:center;
+  transform: rotateX(var(--tiltX)) rotateY(var(--tiltY));
+  transform-style: preserve-3d;
+  transition: transform .12s ease-out;
 }
+
 
 .status{
   font-weight:200;
@@ -127,7 +135,7 @@ body{
 .status.open{
   color:var(--open);
   cursor:pointer;
-  animation: neonShift 18s ease-in-out infinite;
+  animation: neonShift var(--neonDur) ease-in-out infinite;
   transition: opacity .35s ease, transform .45s cubic-bezier(.2,.8,.2,1), text-shadow .55s ease;
   text-shadow:
     0 0 10px rgba(233,233,234,.18),
@@ -168,3 +176,44 @@ body{
   color:rgba(183,183,189,.65);
   font-size:11px;
 }
+
+/* CLOSED mood: красные оттенки + мерцание вместо движения */
+body.is-closed .cosmos::before{
+  background:
+    radial-gradient(900px 520px at 20% 15%, rgba(255,60,90,.12), transparent 60%),
+    radial-gradient(900px 620px at 80% 25%, rgba(255,120,80,.10), transparent 60%),
+    radial-gradient(900px 700px at 50% 85%, rgba(160,40,60,.08), transparent 60%),
+    linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.72));
+  filter: blur(18px) saturate(115%);
+  opacity: .78;
+  animation-duration: 24s;
+}
+
+/* мерцание звёзд (тухнут/сияют) */
+@keyframes twinkle{
+  0%   { opacity: .18; filter: brightness(.85); }
+  40%  { opacity: .55; filter: brightness(1.12); }
+  60%  { opacity: .22; filter: brightness(.9); }
+  100% { opacity: .48; filter: brightness(1.05); }
+}
+
+/* в CLOSED: звёзды НЕ “летят”, только мерцают */
+body.is-closed .cosmos::after{
+  animation: twinkle 3.2s ease-in-out infinite;
+  opacity: .55;
+  transform: translate3d(0,0,0); /* без движения */
+}
+
+body.is-closed .cosmos .dust{
+  animation: twinkle 2.4s ease-in-out infinite;
+  opacity: .35;
+  transform: translate3d(0,0,0);
+}
+
+/* CLOSED: неон у слова CLOSED тоже краснеет */
+body.is-closed{
+  --n1: rgba(255,70,90,.24);
+  --n2: rgba(255,140,90,.16);
+  --neonDur: 10s;
+}
+
