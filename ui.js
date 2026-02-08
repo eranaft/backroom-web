@@ -179,18 +179,30 @@ window.addEventListener("resize", syncIndicatorSoon);
 if (stage){
   let sx=0, sy=0, swiping=false;
 
-  stage.addEventListener("touchstart", (e)=>{
-    const t0 = e.touches?.[0];
-    if (!t0) return;
-    sx = t0.clientX; sy = t0.clientY; swiping = true;
-  }, {passive:true});
+stage.addEventListener("touchstart", (e)=>{
+  const t0 = e.touches?.[0];
+  if (!t0) return;
+
+  // если пользователь начал жест внутри скроллящегося блока — не свайпаем роут
+  const scroller = e.target?.closest?.(".page");
+  if (scroller){
+    // если можно скроллить (не на краю) — отдаём жест скроллу
+    const atTop = scroller.scrollTop <= 0;
+    const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
+    scroller.__allowRouteSwipe = atTop || atBottom; // только на краях можно свайпать
+  }
+
+  sx = t0.clientX; sy = t0.clientY; swiping = true;
+}, {passive:true});
 
   stage.addEventListener("touchend", (e)=>{
     if (!swiping) return;
     swiping = false;
+   const scroller = e.target?.closest?.(".page");
+if (scroller && scroller.__allowRouteSwipe === false) return
     const t0 = e.changedTouches?.[0];
     if (!t0) return;
-
+   
     const dx = t0.clientX - sx;
     const dy = t0.clientY - sy;
 
@@ -347,8 +359,14 @@ function setProg(p){
   if (!scrub || !prog || !knob) return;
   const clamped = Math.max(0, Math.min(1, p));
   prog.style.width = `${clamped * 100}%`;
+
   const r = scrub.getBoundingClientRect();
-  knob.style.left = `${r.width * clamped}px`;
+  const x = r.width * clamped;
+
+  // knob visually centered, so clamp a bit inward
+  const pad = 0; // можно 4 если хочешь идеальный край
+  const safeX = Math.max(pad, Math.min(r.width - pad, x));
+  knob.style.left = `${safeX}px`;
 }
 
 if (audio){
