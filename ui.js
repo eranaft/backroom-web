@@ -82,6 +82,28 @@ applyI18n();
    Router (swipe-like)
 ========================= */
 const tabs = [...document.querySelectorAll(".tab")];
+// --- Smooth tab indicator ---
+const tabsWrap = document.querySelector(".tabs");
+const indicator = document.createElement("span");
+indicator.className = "tabIndicator";
+tabsWrap.appendChild(indicator);
+
+function moveIndicatorToActive(){
+  const active = tabs.find(t => t.classList.contains("active")) || tabs[0];
+  if (!active) return;
+
+  const wrapRect = tabsWrap.getBoundingClientRect();
+  const r = active.getBoundingClientRect();
+
+  const left = r.left - wrapRect.left;
+  indicator.style.width = `${r.width}px`;
+  indicator.style.transform = `translateX(${left}px)`;
+}
+
+// вызвать один раз
+window.addEventListener("load", () => requestAnimationFrame(moveIndicatorToActive));
+window.addEventListener("resize", () => requestAnimationFrame(moveIndicatorToActive));
+
 const pages = [...document.querySelectorAll(".page")];
 const stage = document.getElementById("stage");
 
@@ -91,6 +113,8 @@ let transitioning = false;
 
 function setActiveTab(route){
   tabs.forEach(b => b.classList.toggle("active", b.dataset.route === route));
+   requestAnimationFrame(moveIndicatorToActive);
+
 }
 
 function showPage(route, dir=0){
