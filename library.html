@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BACKROOM — Library</title>
+  <link rel="stylesheet" href="/ui.css" />
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="grid"></div>
+
+  <div class="shell page">
+    <div class="top">
+      <div class="brand"><span class="dot"></span><span>LIBRARY</span></div>
+      <div class="actions">
+        <a class="a" href="javascript:void(0)" id="backBtn">BACK</a>
+        <a class="a" href="/index.html">EXIT</a>
+      </div>
+    </div>
+
+    <div class="center">
+      <section class="hero neonStroke">
+        <div class="kicker">CASSETTES</div>
+        <div class="title">Soon.</div>
+        <div class="subtitle">Дальше тут будет: кассеты, редкость, плей, ссылки. Сначала фиксируем стиль.</div>
+
+        <div class="row">
+          <button class="btn primary" id="toPlayer">OPEN PLAYER</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="/ui.js" defer></script>
+  <script defer>
+    document.getElementById('backBtn').onclick = () => window.BACKROOM_GO('/room.html');
+    document.getElementById('toPlayer').onclick = () => window.BACKROOM_GO('/player.html');
+  </script>
+</body>
+</html>
