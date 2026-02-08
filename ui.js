@@ -530,16 +530,21 @@ function next(){
 prevBtn.onclick = prev;
 nextBtn.onclick = next;
 
+function syncPlayUI(){
+  if (audio.paused) toggleBtn.classList.remove("isPlaying");
+  else toggleBtn.classList.add("isPlaying");
+}
+
 toggleBtn.onclick = () => {
   if (!audio.src){ playTrackById(TRACKS[0].id); return; }
-  if (audio.paused){
-    audio.play().catch(()=>{});
-    toggleBtn.textContent = "⏸";
-  }else{
-    audio.pause();
-    toggleBtn.textContent = "⏵";
-  }
+  if (audio.paused) audio.play().catch(()=>{});
+  else audio.pause();
+  syncPlayUI();
 };
+
+audio.addEventListener("play", syncPlayUI);
+audio.addEventListener("pause", syncPlayUI);
+
 
 audio.addEventListener("pause", () => toggleBtn.textContent = "⏵");
 audio.addEventListener("play", () => toggleBtn.textContent = "⏸");
