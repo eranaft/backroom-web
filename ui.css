@@ -292,6 +292,28 @@ body{
   color: rgba(255,255,255,.90);
 }
 
+/* --- Tab indicator (smooth slide) --- */
+.tabs{
+  position: relative;
+}
+
+.tabIndicator{
+  position:absolute;
+  top:6px;
+  bottom:6px;
+  left:6px;
+  width: 80px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(0,220,255,.18);
+  box-shadow: 0 0 18px rgba(0,220,255,.10);
+  backdrop-filter: blur(14px);
+  transition: transform .45s cubic-bezier(.2,.85,.2,1), width .45s cubic-bezier(.2,.85,.2,1);
+  pointer-events:none;
+}
+.tab{ position: relative; z-index: 1; }
+
+
 /* Exit centered */
 .exitBtn{
   height:34px;
