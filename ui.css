@@ -190,7 +190,12 @@ body{
   transition: transform .18s ease, border-color .18s ease;
 }
 .tab:hover{ border-color: rgba(255,255,255,.16); transform: translateY(-1px); }
-.tab.active{ color: rgba(255,255,255,.92); border-color: rgba(0,220,255,.22); }
+/* active таб — без второй подсветки (подсветку делает индикатор) */
+.tab.active{
+  color: rgba(255,255,255,.92);
+  border-color: rgba(255,255,255,.10);
+}
+
 
 /* Exit */
 .exitBtn{
