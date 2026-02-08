@@ -3,24 +3,19 @@
   --open:#e9e9ea;
   --closed:#6a6a6f;
   --timer:#b7b7bd;
-  
-  --neonDur: 14s;      /* скорость перелива неона (быстрее = меньше секунд) */
+
+  --warp: 0;          /* 0..1 из JS */
   --tiltX: 0deg;
   --tiltY: 0deg;
 
-  /* дефолт для неона (чтобы не мигало до старта анимации) */
-  --n1: rgba(88,242,255,.22);
-  --n2: rgba(179,93,255,.18);
+  --neonSpeed: 12s;   /* JS будет менять */
+  --hue: 0deg;        /* JS будет менять */
 }
 
 *{box-sizing:border-box;}
 html,body{height:100%;}
 
-/* управляющие параметры (их меняет JS) */
 body{
-  --warp: 0;          /* 0..1 */
-  --starsBoost: 0;    /* 0..1 */
-
   margin:0;
   height:100%;
   display:flex;
@@ -32,14 +27,13 @@ body{
   overflow:hidden;
 }
 
-/* ===== тонкий “космос” ===== */
+/* туман/небулы (оставляем) */
 .cosmos{
   position:fixed;
   inset:0;
   pointer-events:none;
   opacity:.90;
 }
-
 .cosmos::before{
   content:"";
   position:absolute;
@@ -48,64 +42,30 @@ body{
     radial-gradient(800px 500px at 20% 15%, rgba(120,80,255,.10), transparent 60%),
     radial-gradient(900px 600px at 80% 25%, rgba(60,220,255,.10), transparent 60%),
     radial-gradient(900px 700px at 50% 85%, rgba(255,80,160,.06), transparent 60%),
-    linear-gradient(180deg, rgba(0,0,0,.20), rgba(0,0,0,.65));
-  filter: blur(18px) saturate(115%);
-  opacity: calc(.72 + clamp(0, var(--warp), 1) * .28);
+    linear-gradient(180deg, rgba(0,0,0,.20), rgba(0,0,0,.70));
+  filter: blur(18px) saturate(120%);
+  opacity: calc(.70 + var(--warp) * .30);
   animation: nebula 18s ease-in-out infinite;
   transform: translate3d(0,0,0);
   will-change: transform, opacity;
 }
-
 @keyframes nebula{
   0%   { transform: translate3d(-1%, -1%, 0) scale(1.02); }
   50%  { transform: translate3d( 1%,  1%, 0) scale(1.05); }
   100% { transform: translate3d(-1%, -1%, 0) scale(1.02); }
 }
 
-/* звёзды (основной слой) */
-.cosmos::after{
-  content:"";
-  position:absolute;
-  inset:-30%;
-  background-image:
-    radial-gradient(circle, rgba(255,255,255,.30) 0 1px, transparent 2px),
-    radial-gradient(circle, rgba(255,255,255,.18) 0 1px, transparent 2px);
-  background-size: 220px 220px, 320px 320px;
-  background-position: 0 0, 80px 140px;
-  animation: stars 28s linear infinite;
-  opacity: calc(.42 + clamp(0, var(--warp), 1) * .38);
-  will-change: transform, opacity;
+/* Canvas звёзды */
+#stars{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  opacity:1;
 }
 
-/* ВАЖНО: этого не хватало */
-@keyframes stars{
-  0%{ transform: translate3d(0,0,0); }
-  100%{ transform: translate3d(-140px,-100px,0); }
-}
-
-/* дополнительная “пыль” звёзд (нарастает по времени) */
-.cosmos .dust{
-  position:absolute;
-  inset:-30%;
-  background-image:
-    radial-gradient(circle, rgba(88,242,255,.22) 0 1px, transparent 2px),
-    radial-gradient(circle, rgba(179,93,255,.18) 0 1px, transparent 2px),
-    radial-gradient(circle, rgba(255,71,154,.16) 0 1px, transparent 2px);
-  background-size: 260px 260px, 340px 340px, 420px 420px;
-  background-position: 40px 60px, 110px 190px, 210px 120px;
-  opacity: calc(clamp(0, var(--starsBoost), 1) * .55);
-  filter: blur(.2px);
-  animation: stars2 22s linear infinite;
-  mix-blend-mode: screen;
-  will-change: transform, opacity;
-}
-
-@keyframes stars2{
-  0%{ transform: translate3d(0,0,0); }
-  100%{ transform: translate3d(-200px,-140px,0); }
-}
-
-/* ===== контент ===== */
+/* контент */
 .wrap{
   position:relative;
   z-index:2;
@@ -116,7 +76,6 @@ body{
   transition: transform .12s ease-out;
 }
 
-
 .status{
   font-weight:200;
   font-size:64px;
@@ -124,48 +83,61 @@ body{
   user-select:none;
 }
 
-/* медленная смена неон-градиента */
-@keyframes neonShift{
-  0%   { --n1: rgba(88,242,255,.22); --n2: rgba(179,93,255,.18); }
-  33%  { --n1: rgba(255,71,154,.18); --n2: rgba(88,242,255,.18); }
-  66%  { --n1: rgba(179,93,255,.22); --n2: rgba(255,71,154,.16); }
-  100% { --n1: rgba(88,242,255,.22); --n2: rgba(179,93,255,.18); }
+/* ОЩУТИМЫЙ перелив: градиент внутри текста + движение + hue */
+.status.open{
+  cursor:pointer;
+
+  background: linear-gradient(
+    90deg,
+    rgba(88,242,255,.95),
+    rgba(179,93,255,.95),
+    rgba(255,71,154,.95),
+    rgba(88,242,255,.95)
+  );
+  background-size: 240% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+
+  filter: hue-rotate(var(--hue));
+  animation: textFlow var(--neonSpeed) ease-in-out infinite;
+
+  transition: transform .45s cubic-bezier(.2,.8,.2,1), opacity .35s ease, text-shadow .55s ease;
+  text-shadow:
+    0 0 10px rgba(233,233,234,.10),
+    0 0 34px rgba(88,242,255,.18),
+    0 0 50px rgba(179,93,255,.16);
 }
 
-.status.open{
-  color:var(--open);
-  cursor:pointer;
-  animation: neonShift var(--neonDur) ease-in-out infinite;
-  transition: opacity .35s ease, transform .45s cubic-bezier(.2,.8,.2,1), text-shadow .55s ease;
-  text-shadow:
-    0 0 10px rgba(233,233,234,.18),
-    0 0 24px var(--n1),
-    0 0 42px var(--n2);
+@keyframes textFlow{
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .status.open:hover{
-  opacity:.96;
+  opacity:.98;
   transform: translateY(-1px);
   text-shadow:
-    0 0 12px rgba(233,233,234,.22),
-    0 0 34px var(--n1),
-    0 0 58px var(--n2);
+    0 0 12px rgba(233,233,234,.14),
+    0 0 44px rgba(88,242,255,.22),
+    0 0 70px rgba(255,71,154,.18);
 }
 
-/* mobile */
 .status.open:active{
   transform: translateY(0px) scale(.985);
 }
 
+/* CLOSED */
 .status.closed{
-  color:var(--closed);
+  color: rgba(200,200,205,.45);
   cursor:default;
 }
 
 .timer{
   margin-top:18px;
   font-weight:200;
-  color:var(--timer);
+  color:rgba(233,233,234,.65);
   font-size:14px;
   min-height:20px;
 }
@@ -177,43 +149,12 @@ body{
   font-size:11px;
 }
 
-/* CLOSED mood: красные оттенки + мерцание вместо движения */
+/* CLOSED mood: фон теплее */
 body.is-closed .cosmos::before{
   background:
     radial-gradient(900px 520px at 20% 15%, rgba(255,60,90,.12), transparent 60%),
     radial-gradient(900px 620px at 80% 25%, rgba(255,120,80,.10), transparent 60%),
     radial-gradient(900px 700px at 50% 85%, rgba(160,40,60,.08), transparent 60%),
-    linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.72));
-  filter: blur(18px) saturate(115%);
+    linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.78));
   opacity: .78;
-  animation-duration: 24s;
 }
-
-/* мерцание звёзд (тухнут/сияют) */
-@keyframes twinkle{
-  0%   { opacity: .18; filter: brightness(.85); }
-  40%  { opacity: .55; filter: brightness(1.12); }
-  60%  { opacity: .22; filter: brightness(.9); }
-  100% { opacity: .48; filter: brightness(1.05); }
-}
-
-/* в CLOSED: звёзды НЕ “летят”, только мерцают */
-body.is-closed .cosmos::after{
-  animation: twinkle 3.2s ease-in-out infinite;
-  opacity: .55;
-  transform: translate3d(0,0,0); /* без движения */
-}
-
-body.is-closed .cosmos .dust{
-  animation: twinkle 2.4s ease-in-out infinite;
-  opacity: .35;
-  transform: translate3d(0,0,0);
-}
-
-/* CLOSED: неон у слова CLOSED тоже краснеет */
-body.is-closed{
-  --n1: rgba(255,70,90,.24);
-  --n2: rgba(255,140,90,.16);
-  --neonDur: 10s;
-}
-
