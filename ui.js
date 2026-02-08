@@ -331,6 +331,37 @@ poll();
    Audio (demo)
 ========================= */
 const audio = document.getElementById("audio");
+// ===== Mini scrub UI =====
+const mini = document.getElementById("mini");
+
+const scrub = document.createElement("div");
+scrub.className = "miniScrub";
+mini.appendChild(scrub);
+
+const prog = document.createElement("div");
+prog.className = "miniProgress";
+mini.appendChild(prog);
+
+const knob = document.createElement("div");
+knob.className = "miniKnob";
+mini.appendChild(knob);
+
+function setProg(p){ // p 0..1
+  const clamped = Math.max(0, Math.min(1, p));
+  const leftPx = 12 + (mini.clientWidth - 24) * clamped;
+  prog.style.width = `${clamped * 100}%`;
+  knob.style.left = `${leftPx}px`;
+}
+audio.addEventListener("timeupdate", () => {
+  if (!audio.duration) return;
+  setProg(audio.currentTime / audio.duration);
+});
+audio.addEventListener("loadedmetadata", () => setProg(0));
+audio.addEventListener("ended", () => setProg(1));
+
+
+
+
 const mName = document.getElementById("mName");
 const mHint = document.getElementById("mHint");
 const prevBtn = document.getElementById("prev");
@@ -375,6 +406,32 @@ const TRACKS = [
     ]
   },
 ];
+
+let dragging = false;
+
+function seekFromClientX(clientX){
+  const r = scrub.getBoundingClientRect();
+  const x = Math.max(0, Math.min(r.width, clientX - r.left));
+  const p = r.width ? (x / r.width) : 0;
+  setProg(p);
+  if (audio.duration) audio.currentTime = p * audio.duration;
+}
+
+scrub.addEventListener("pointerdown", (e) => {
+  dragging = true;
+  scrub.setPointerCapture(e.pointerId);
+  seekFromClientX(e.clientX);
+});
+
+scrub.addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+  seekFromClientX(e.clientX);
+});
+
+scrub.addEventListener("pointerup", (e) => {
+  dragging = false;
+  try{ scrub.releasePointerCapture(e.pointerId); }catch{}
+});
 
 let filtered = [...TRACKS];
 let idx = -1;
@@ -440,7 +497,8 @@ function playTrackById(id){
   yandexBtn.onclick = () => openLink(tk.yandex);
   spotifyBtn.onclick = () => openLink(tk.spotify);
 
-  toggleBtn.textContent = t("pause");
+ toggleBtn.textContent = audio.paused ? "⏵" : "⏸";
+
 }
 
 function prev(){
@@ -459,12 +517,17 @@ nextBtn.onclick = next;
 
 toggleBtn.onclick = () => {
   if (!audio.src){ playTrackById(TRACKS[0].id); return; }
-  if (audio.paused){ audio.play().catch(()=>{}); toggleBtn.textContent = t("pause"); }
-  else { audio.pause(); toggleBtn.textContent = t("play"); }
+  if (audio.paused){
+    audio.play().catch(()=>{});
+    toggleBtn.textContent = "⏸";
+  }else{
+    audio.pause();
+    toggleBtn.textContent = "⏵";
+  }
 };
 
-audio.addEventListener("pause", () => toggleBtn.textContent = t("play"));
-audio.addEventListener("play", () => toggleBtn.textContent = t("pause"));
+audio.addEventListener("pause", () => toggleBtn.textContent = "⏵");
+audio.addEventListener("play", () => toggleBtn.textContent = "⏸");
 
 if (searchEl){
   searchEl.addEventListener("input", () => {
