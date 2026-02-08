@@ -706,3 +706,71 @@ body{
 @media (hover:none){
   .pBtn:hover{ transform:none; }
 }
+
+/* =========================
+   FIXES: Tabs highlight double + iOS scroll + mini player stability
+========================= */
+
+/* 1) Tabs: убираем ощущение "двойного выделения"
+   — индикатор без border, свечение мягкое
+*/
+.tabIndicator{
+  border: none !important;
+  background: rgba(255,255,255,.05) !important;
+  box-shadow:
+    0 0 0 1px rgba(0,220,255,.16) inset,
+    0 0 22px rgba(0,220,255,.10),
+    0 0 34px rgba(140,90,255,.08) !important;
+}
+
+/* табы оставляем спокойными, чтобы не спорили с индикатором */
+.tab{
+  border-color: rgba(255,255,255,.08) !important;
+}
+.tab.active{
+  border-color: rgba(255,255,255,.08) !important;
+}
+
+/* 2) Scroll: чтобы в каждой странице нормально скроллилось на телефоне
+   — особенно iOS, где absolute + overflow иногда глючит */
+.stage{
+  min-height: 0;
+}
+.page{
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 90px; /* место под mini player */
+}
+.page.active{
+  pointer-events: auto;
+}
+
+/* иногда iOS "не цепляет" скролл, если внутри есть flex и центрирование */
+.page > *{
+  min-height: 0;
+}
+
+/* 3) Mini player: фиксируем высоту/паддинги, чтобы ничего не прыгало */
+.mini{
+  flex: 0 0 auto;
+  height: 72px;
+  padding-top: 22px; /* чуть больше, чтобы scrub не давил контент */
+}
+.miniLeft, .miniMeta{
+  min-width: 0;
+}
+
+/* 4) Мини-кнопки: убираем возможные прыжки из-за line-height/font */
+.pBtn{
+  line-height: 1 !important;
+}
+.pBtn .ico{
+  display:block;
+}
+
+/* 5) Старые стили iconBtn/chip могут случайно применяться — гасим их влияние */
+.iconBtn, .chip{
+  -webkit-tap-highlight-color: transparent;
+}
