@@ -1,0 +1,112 @@
+:root{
+  --bg:#0b0b0c;
+  --open:#e9e9ea;
+  --closed:#6a6a6f;
+  --timer:#b7b7bd;
+  --soft: rgba(233,233,234,.18);
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:var(--bg);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  letter-spacing:0.08em;
+}
+.wrap{width:min(720px, 92vw);}
+.stack{text-align:center;}
+
+.status{
+  font-weight:200;
+  font-size:64px;
+  text-transform:uppercase;
+  user-select:none;
+}
+.status.open{
+  color:var(--open);
+  cursor:pointer;
+  transition: opacity .15s ease, text-shadow .15s ease;
+}
+.status.open:hover{
+  opacity:.92;
+  text-shadow: 0 0 18px var(--soft);
+}
+.status.closed{
+  color:var(--closed);
+  cursor:default;
+}
+
+.timer{
+  margin-top:18px;
+  font-weight:200;
+  color:var(--timer);
+  font-size:14px;
+  min-height:20px;
+}
+
+.meta{
+  margin-top:12px;
+  font-weight:200;
+  color:rgba(183,183,189,.65);
+  font-size:11px;
+}
+
+.room{width:100%;}
+.topline{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:18px;
+}
+.label,.back{
+  font-weight:200;
+  color:rgba(233,233,234,.75);
+  font-size:11px;
+  text-decoration:none;
+}
+.back{transition:opacity .15s ease;}
+.back:hover{opacity:.85;}
+
+.tracks{display:flex; flex-direction:column; gap:14px;}
+.card{
+  border:1px solid rgba(233,233,234,.10);
+  border-radius:14px;
+  padding:14px;
+}
+.title{
+  font-weight:200;
+  color:rgba(233,233,234,.92);
+  font-size:14px;
+  margin:0 0 10px 0;
+}
+.note{
+  font-weight:200;
+  color:rgba(183,183,189,.9);
+  font-size:12px;
+  margin:10px 0 0 0;
+  letter-spacing:0.02em;
+}
+.links{
+  margin-top:10px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.link{
+  font-weight:200;
+  color:rgba(233,233,234,.75);
+  font-size:11px;
+  text-decoration:none;
+  border:1px solid rgba(233,233,234,.12);
+  padding:6px 10px;
+  border-radius:999px;
+  transition:opacity .15s ease, border-color .15s ease;
+}
+.link:hover{
+  opacity:.9;
+  border-color: rgba(233,233,234,.22);
+}
+audio{width:100%;}
