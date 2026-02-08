@@ -67,7 +67,7 @@ function applyI18n(){
   });
 }
 applyI18n();
-
+syncIndicatorSoon();
 /* =========================
    Router (swipe-like)
 ========================= */
@@ -103,14 +103,16 @@ function moveIndicatorToActive(){
   const r = active.getBoundingClientRect();
 
   const left = r.left - wrapRect.left;
+
   indicator.style.width = `${r.width}px`;
   indicator.style.transform = `translateX(${left}px)`;
 }
 
-function setActiveTab(route){
-  tabs.forEach(b => b.classList.toggle("active", b.dataset.route === route));
-  requestAnimationFrame(moveIndicatorToActive);
+// helper: reliable relayout (fonts/i18n)
+function syncIndicatorSoon(){
+  requestAnimationFrame(() => requestAnimationFrame(moveIndicatorToActive));
 }
+
 
 function showPage(route, dir=0){
   if (transitioning) return;
@@ -136,7 +138,10 @@ function showPage(route, dir=0){
   requestAnimationFrame(() => next.classList.remove("from-left","from-right"));
 
   currentRoute = route;
-  setActiveTab(route);
+  function setActiveTab(route){
+  tabs.forEach(b => b.classList.toggle("active", b.dataset.route === route));
+  syncIndicatorSoon();
+}
   history.replaceState(null, "", `#${route}`);
 
   setTimeout(() => {
@@ -164,10 +169,11 @@ window.addEventListener("load", () => {
   currentRoute = ORDER.includes(route) ? route : "home";
   pages.forEach(p => p.classList.toggle("active", p.dataset.page === currentRoute));
   setActiveTab(currentRoute);
+   syncIndicatorSoon();
   requestAnimationFrame(moveIndicatorToActive);
 });
 
-window.addEventListener("resize", () => requestAnimationFrame(moveIndicatorToActive));
+window.addEventListener("resize", syncIndicatorSoon);
 
 /* swipe on stage */
 if (stage){
