@@ -44,10 +44,20 @@ body{
 }
 
 @keyframes nebula{
-  0%{ transform: translate3d(-1%, -1%, 0) scale(1.02); opacity:.75; }
-  50%{ transform: translate3d(1%, 1%, 0) scale(1.05); opacity:.90; }
-  100%{ transform: translate3d(-1%, -1%, 0) scale(1.02); opacity:.75; }
+  0%{
+    transform: translate3d(-1%, -1%, 0) scale(1.02);
+    opacity:.72;
+  }
+  50%{
+    transform: translate3d(1%, 1%, 0) scale(1.05);
+    opacity:.90;
+  }
+  100%{
+    transform: translate3d(-1%, -1%, 0) scale(1.02);
+    opacity:.72;
+  }
 }
+
 
 /* звёзды (две “плёнки” для глубины) */
 .cosmos::after{
@@ -65,7 +75,7 @@ body{
 
 @keyframes stars{
   0%{ transform: translate3d(0,0,0); }
-  100%{ transform: translate3d(-120px,-80px,0); }
+  100%{ transform: translate3d(-140px,-100px,0); }
 }
 
 /* контент лобби */
@@ -93,9 +103,28 @@ body{
   text-shadow: 0 0 18px var(--soft);
   transform: translateY(-1px);
 }
-.status.open:active{
-  transform: translateY(0px) scale(.99);
+
+.status.open{
+  color:var(--open);
+  cursor:pointer;
+  transition:
+    opacity .25s ease,
+    text-shadow .35s ease,
+    transform .35s cubic-bezier(.2,.8,.2,1);
 }
+
+.status.open:hover{
+  opacity:.95;
+  text-shadow:
+    0 0 12px rgba(233,233,234,.22),
+    0 0 28px rgba(120,180,255,.18);
+  transform: translateY(-1px);
+}
+
+.status.open:active{
+  transform: translateY(0px) scale(.985);
+}
+
 
 .status.closed{
   color:var(--closed);
@@ -116,3 +145,15 @@ body{
   color:rgba(183,183,189,.65);
   font-size:11px;
 }
+
+/* ускорение космоса при hover на OPEN */
+body.hover-open .cosmos::before{
+  animation-duration: 10s; /* было 18s */
+  opacity: .95;
+}
+
+body.hover-open .cosmos::after{
+  animation-duration: 14s; /* было 28s */
+  opacity: .75;
+}
+
