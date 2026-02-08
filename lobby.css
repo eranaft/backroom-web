@@ -46,7 +46,7 @@ body{
     radial-gradient(900px 700px at 50% 85%, rgba(255,80,160,.06), transparent 60%),
     linear-gradient(180deg, rgba(0,0,0,.20), rgba(0,0,0,.65));
   filter: blur(18px) saturate(115%);
-  opacity: calc(.72 + var(--warp) * .28);
+  opacity: calc(.72 + clamp(0, var(--warp), 1) * .28);
   animation: nebula 18s ease-in-out infinite;
   transform: translate3d(0,0,0);
   will-change: transform, opacity;
@@ -69,7 +69,7 @@ body{
   background-size: 220px 220px, 320px 320px;
   background-position: 0 0, 80px 140px;
   animation: stars 28s linear infinite;
-  opacity: calc(.42 + var(--warp) * .38);
+  opacity: calc(.42 + clamp(0, var(--warp), 1) * .38);
   will-change: transform, opacity;
 }
 
@@ -89,7 +89,7 @@ body{
     radial-gradient(circle, rgba(255,71,154,.16) 0 1px, transparent 2px);
   background-size: 260px 260px, 340px 340px, 420px 420px;
   background-position: 40px 60px, 110px 190px, 210px 120px;
-  opacity: calc(var(--starsBoost) * .55);
+  opacity: calc(clamp(0, var(--starsBoost), 1) * .55);
   filter: blur(.2px);
   animation: stars2 22s linear infinite;
   mix-blend-mode: screen;
