@@ -186,10 +186,15 @@ stage.addEventListener("touchend", (e)=>{
 ========================= */
 let indicator = null;
 if (tabsWrap){
-  indicator = document.createElement("span");
-  indicator.className = "tabIndicator";
-  tabsWrap.appendChild(indicator);
+  // FIX: не дублируем индикатор
+  indicator = tabsWrap.querySelector(".tabIndicator");
+  if (!indicator){
+    indicator = document.createElement("span");
+    indicator.className = "tabIndicator";
+    tabsWrap.appendChild(indicator);
+  }
 }
+
 
 function moveIndicatorToActive(){
   if (!indicator || !tabsWrap) return;
