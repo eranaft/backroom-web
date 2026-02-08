@@ -54,23 +54,53 @@ async function tick(){
   }
 }
 const body = document.body;
+let hoveringOpen = false;
+let warp = 0;        // 0..1
+let starsBoost = 0;  // 0..1
+let rafId = null;
 
-statusEl.addEventListener('mouseenter', () => {
-  if (lastState?.isOpen) body.classList.add('hover-open');
-});
+function setVars(){
+  document.body.style.setProperty('--warp', warp.toFixed(3));
+  document.body.style.setProperty('--starsBoost', starsBoost.toFixed(3));
+}
 
-statusEl.addEventListener('mouseleave', () => {
-  body.classList.remove('hover-open');
-});
+function loop(){
+  // target растёт, пока держишь hover, и плавно падает когда отпустил
+  const target = hoveringOpen ? 1 : 0;
 
-// для мобильных (tap)
-statusEl.addEventListener('touchstart', () => {
-  if (lastState?.isOpen) body.classList.add('hover-open');
-}, { passive:true });
+  // плавное приближение (без рывков)
+  warp += (target - warp) * 0.04;
 
-statusEl.addEventListener('touchend', () => {
-  body.classList.remove('hover-open');
-});
+  // звёзды нарастают “дольше”, чтобы было ощущение прогрева
+  const starsTarget = hoveringOpen ? 1 : 0;
+  starsBoost += (starsTarget - starsBoost) * 0.02;
+
+  setVars();
+  rafId = requestAnimationFrame(loop);
+}
+
+function startAnim(){
+  if (!rafId) rafId = requestAnimationFrame(loop);
+}
+
+startAnim();
+
+function onEnter(){
+  if (lastState?.isOpen) hoveringOpen = true;
+}
+function onLeave(){
+  hoveringOpen = false;
+}
+
+statusEl.addEventListener('mouseenter', onEnter);
+statusEl.addEventListener('mouseleave', onLeave);
+
+// mobile (tap hold)
+statusEl.addEventListener('touchstart', onEnter, { passive:true });
+statusEl.addEventListener('touchend', onLeave, { passive:true });
+statusEl.addEventListener('touchcancel', onLeave, { passive:true });
+
+
 
 setInterval(tick, 1000);
 tick();
