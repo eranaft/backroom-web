@@ -3,93 +3,42 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>BACKROOM — Room</title>
-  <link rel="stylesheet" href="/room.css" />
+  <title>BACKROOM — Home</title>
+  <link rel="stylesheet" href="/ui.css" />
 </head>
-
 <body>
-  <!-- фон комнаты -->
-  <div class="room-bg"></div>
-  <div class="room-grid"></div>
-  <div class="room-glow"></div>
+  <div class="bg"></div>
+  <div class="grid"></div>
 
-  <main class="shell" id="shell">
-    <!-- Top bar -->
-    <header class="topbar glass">
-      <div class="brand">
-        <span class="dot"></span>
-        <span>BACKROOM</span>
+  <div class="shell page">
+    <div class="top">
+      <div class="brand"><span class="dot"></span><span>BACKROOM</span></div>
+      <div class="actions">
+        <a class="a" href="/index.html">EXIT</a>
       </div>
+    </div>
 
-      <div class="search">
-        <input id="q" type="text" placeholder="Поиск треков…" autocomplete="off" />
-      </div>
-
-      <button class="exit" id="exitBtn" aria-label="Exit">EXIT</button>
-    </header>
-
-    <section class="layout">
-      <!-- Left nav -->
-      <aside class="nav glass">
-        <div class="navTitle">LIBRARY</div>
-        <button class="navItem active" data-tab="all">All</button>
-        <button class="navItem" data-tab="new">New</button>
-        <button class="navItem" data-tab="liked">Liked</button>
-
-        <div class="divider"></div>
-
-        <div class="navTitle">LINKS</div>
-        <a class="navItem link" id="yandexLink" href="#" target="_blank" rel="noreferrer">Yandex Music</a>
-        <a class="navItem link" id="spotifyLink" href="#" target="_blank" rel="noreferrer">Spotify</a>
-      </aside>
-
-      <!-- Center: tracks -->
-      <section class="center">
-        <div class="hero glass">
-          <div class="heroText">
-            <div class="heroTitle">Room</div>
-            <div class="heroSub">Dark mode. Neon core. No noise.</div>
-          </div>
-          <div class="heroBadge" id="windowBadge">window: —</div>
+    <div class="center">
+      <section class="hero neonStroke">
+        <div class="kicker">WELCOME</div>
+        <div class="title softNeonText">KRAMSKOY</div>
+        <div class="subtitle">
+          Ночная комната. Минимализм. Ядерный неон — только на гранях.
+          <br/>Нажми <b>ENTER</b>, чтобы открыть библиотеку.
         </div>
 
-        <div class="tracks glass" id="tracks">
-          <!-- cards injected -->
+        <div class="row">
+          <button class="btn primary" id="enterBtn">ENTER</button>
+          <button class="btn" id="libBtn">LIBRARY</button>
         </div>
       </section>
+    </div>
+  </div>
 
-      <!-- Right: now playing -->
-      <aside class="player glass" id="player">
-        <div class="nowTitle">NOW</div>
-
-        <div class="cover" id="cover">
-          <div class="coverGlow"></div>
-          <div class="coverLabel" id="coverLabel">No track</div>
-        </div>
-
-        <div class="meta">
-          <div class="tTitle" id="tTitle">—</div>
-          <div class="tSub" id="tSub">KRAMSKOY • BACKROOM</div>
-        </div>
-
-        <audio id="audio" preload="metadata" controls></audio>
-
-        <div class="controlsRow">
-          <button class="chip" id="prevBtn">Prev</button>
-          <button class="chip strong" id="playBtn">Play</button>
-          <button class="chip" id="nextBtn">Next</button>
-        </div>
-
-        <div class="small">
-          <span id="statusLine">loading…</span>
-        </div>
-      </aside>
-    </section>
-  </main>
-
-  <script>
-    window.API_BASE = "https://backroom-server.onrender.com";
+  <script src="/ui.js" defer></script>
+  <script defer>
+    document.getElementById('enterBtn').onclick = () => window.BACKROOM_GO('/library.html');
+    document.getElementById('libBtn').onclick   = () => window.BACKROOM_GO('/library.html');
   </script>
-  <script src="/room.js" defer></script>
 </body>
 </html>
