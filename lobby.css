@@ -5,6 +5,10 @@
   --timer:#b7b7bd;
   --soft: rgba(233,233,234,.18);
 }
+body{
+  --warp: 0;          /* 0..1 насколько “разогнан” космос */
+  --starsBoost: 0;    /* 0..1 насколько “плотнее” звёзды */
+}
 
 *{box-sizing:border-box;}
 html,body{height:100%;}
@@ -39,9 +43,12 @@ body{
     radial-gradient(900px 700px at 50% 85%, rgba(255,80,160,.06), transparent 60%),
     linear-gradient(180deg, rgba(0,0,0,.20), rgba(0,0,0,.65));
   filter: blur(18px) saturate(115%);
+  opacity: calc(.75 + var(--warp) * .25);
   animation: nebula 18s ease-in-out infinite;
   transform: translate3d(0,0,0);
+  will-change: transform, opacity;
 }
+
 
 @keyframes nebula{
   0%{
@@ -70,13 +77,33 @@ body{
   background-size: 220px 220px, 320px 320px;
   background-position: 0 0, 80px 140px;
   animation: stars 28s linear infinite;
-  opacity:.55;
+  opacity: calc(.45 + var(--warp) * .35);
+  will-change: transform, opacity;
 }
 
-@keyframes stars{
-  0%{ transform: translate3d(0,0,0); }
-  100%{ transform: translate3d(-140px,-100px,0); }
+/* дополнительная “пыль” звёзд, появляется постепенно */
+.cosmos .dust{
+  position:absolute;
+  inset:-30%;
+  background-image:
+    radial-gradient(circle, rgba(88,242,255,.22) 0 1px, transparent 2px),
+    radial-gradient(circle, rgba(179,93,255,.18) 0 1px, transparent 2px),
+    radial-gradient(circle, rgba(255,71,154,.16) 0 1px, transparent 2px);
+  background-size: 260px 260px, 340px 340px, 420px 420px;
+  background-position: 40px 60px, 110px 190px, 210px 120px;
+  opacity: calc(0 + var(--starsBoost) * .55);
+  filter: blur(.2px);
+  animation: stars2 22s linear infinite;
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
 }
+
+@keyframes stars2{
+  0%{ transform: translate3d(0,0,0); }
+  100%{ transform: translate3d(-200px,-140px,0); }
+}
+
+
 
 /* контент лобби */
 .wrap{
