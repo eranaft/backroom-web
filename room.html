@@ -4,85 +4,112 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>BACKROOM</title>
-  <link rel="stylesheet" href="/ui.css?v=1" />
+
+  <link rel="stylesheet" href="/ui.css?v=2" />
+  <script src="/ui.js?v=2" defer></script>
 </head>
+
 <body>
-  <!-- layers -->
+  <!-- фон: неон + космос -->
   <div class="bg"></div>
   <div class="aura"></div>
-  <canvas id="stars" aria-hidden="true"></canvas>
-  <div class="neonSheen" aria-hidden="true"></div>
-  <div class="vignette" aria-hidden="true"></div>
+  <div class="vignette"></div>
+  <canvas id="stars"></canvas>
 
-  <div class="app" id="app">
-    <!-- top nav -->
+  <div class="shell">
+    <!-- Верхняя зона -->
     <header class="top">
-      <div class="brand" aria-hidden="true">
-        <span class="brandText">BACKROOM</span>
+      <div class="brand">
+        <span class="brandText" data-text="BACKROOM">BACKROOM</span>
       </div>
 
+      <!-- вкладки: голый текст -->
       <nav class="nav" aria-label="Навигация">
-        <button class="navItem isActive" data-route="library">БИБЛИОТЕКА</button>
-        <button class="navItem" data-route="player">ПЛЕЕР</button>
-        <button class="navItem" data-route="game">ИГРА</button>
+        <button class="navItem" data-route="home" aria-current="page">Главная</button>
+        <button class="navItem" data-route="library">Библиотека</button>
+        <button class="navItem" data-route="player">Плеер</button>
+        <button class="navItem" data-route="game">Игра</button>
 
-        <!-- exit icon inline in the same row -->
-        <button class="navExit" id="exitBtn" aria-label="Выход" title="Выход">
-          <!-- exit icon -->
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-7 7 7 7z"></path>
+        <button class="navExit" id="exitBtn" aria-label="Выход">
+          <!-- дверь -->
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="exitIco">
+            <path d="M10 3h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-8V3zm-1 9H3m0 0 3-3M3 12l3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M14.5 12a.7.7 0 1 0 0-.01" fill="currentColor"/>
           </svg>
         </button>
       </nav>
     </header>
 
-    <!-- pages -->
+    <!-- Стейдж страниц (ниже вкладок) -->
     <main class="stage" id="stage">
-      <!-- LIBRARY -->
-      <section class="page isActive" data-page="library">
-        <div class="card glass">
-          <div class="cardHead">
-            <div>
-              <div class="kicker">Кассеты</div>
-              <div class="h1">Библиотека</div>
+      <!-- HOME -->
+      <section class="page isActive" data-page="home">
+        <div class="pageFrame neonEdge glass">
+          <div class="pageInner">
+            <div class="kicker">ПРИВЕТСТВИЕ</div>
+            <h1 class="title softNeonText">KRAMSKOY</h1>
+            <p class="subtitle">
+              Ночная комната. Строго. Мрачно. Живой неон — только по граням.<br/>
+              Здесь ты слушаешь музыку и заходишь в “окна”.
+            </p>
+
+            <div class="row">
+              <button class="btn" data-go="library">Открыть библиотеку</button>
+              <button class="btn primary" data-go="player">Открыть плеер</button>
             </div>
 
-            <input id="search" class="search" type="search" placeholder="Поиск…" />
+            <div class="miniNote">
+              Подсказка: свайп влево/вправо переключает страницы.
+            </div>
           </div>
+        </div>
+      </section>
 
-          <div id="list" class="list"></div>
+      <!-- LIBRARY -->
+      <section class="page" data-page="library">
+        <div class="pageFrame neonEdge glass">
+          <div class="pageInner">
+            <div class="headRow">
+              <div>
+                <div class="kicker">КАССЕТЫ</div>
+                <div class="title2">Библиотека</div>
+              </div>
+
+              <input id="search" class="search" placeholder="Поиск…" />
+            </div>
+
+            <div id="list" class="list"></div>
+          </div>
         </div>
       </section>
 
       <!-- PLAYER -->
       <section class="page" data-page="player">
-        <div class="card glass">
-          <div class="playerTop">
-            <div>
-              <div class="kicker">Сейчас</div>
-              <div id="pTitle" class="h2">—</div>
-              <div id="pHint" class="muted">KRAMSKOY • BACKROOM</div>
-            </div>
-
-            <div class="rightPills">
-              <span id="windowBadge" class="badge">window: —</span>
-            </div>
-          </div>
-
-          <div class="playerGrid">
-            <div class="panel glassSoft">
-              <div class="panelTitle">Описание</div>
-              <div id="pDesc" class="desc">Выбери трек в библиотеке.</div>
-
-              <div class="links">
-                <button class="chip" id="yandexBtn" type="button">YANDEX</button>
-                <button class="chip" id="spotifyBtn" type="button">SPOTIFY</button>
+        <div class="pageFrame neonEdge glass">
+          <div class="pageInner">
+            <div class="headRow">
+              <div>
+                <div class="kicker">СЕЙЧАС</div>
+                <div class="title2" id="pTitle">—</div>
+                <div class="subtitle2" id="pArtist">KRAMSKOY • BACKROOM</div>
               </div>
+              <div class="badge" id="windowBadge">window: —</div>
             </div>
 
-            <div class="panel glassSoft">
-              <div class="panelTitle">Тайминги</div>
-              <div id="chapters" class="chapters"></div>
+            <div class="playerGrid">
+              <div class="panel glassInner">
+                <div class="panelTitle">ОПИСАНИЕ</div>
+                <div class="desc" id="pDesc">Выбери трек в библиотеке.</div>
+                <div class="row">
+                  <button class="chip" id="yandexBtn">YANDEX</button>
+                  <button class="chip" id="spotifyBtn">SPOTIFY</button>
+                </div>
+              </div>
+
+              <div class="panel glassInner">
+                <div class="panelTitle">ТАЙМИНГИ</div>
+                <div class="chapters" id="chapters"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -90,45 +117,57 @@
 
       <!-- GAME -->
       <section class="page" data-page="game">
-        <div class="card glass">
-          <div class="kicker">Игра</div>
-          <div class="h1">В разработке</div>
-          <p class="desc">
-            “Твоя победа — моя песня”.<br/>
-            Здесь будет вход в игру и прогресс разработки.
-          </p>
+        <div class="pageFrame neonEdge glass">
+          <div class="pageInner">
+            <div class="kicker">ИГРА</div>
+            <div class="title2">В разработке</div>
+            <p class="subtitle">
+              “Твоя победа — моя песня”.<br/>
+              Здесь будет вход в игру и прогресс разработки.
+            </p>
+
+            <div class="row">
+              <button class="btn" data-go="home">На главную</button>
+            </div>
+          </div>
         </div>
       </section>
     </main>
 
-    <!-- MINI PLAYER -->
-    <footer class="mini glass" id="mini">
-      <!-- progress inside player, not over controls -->
-      <div class="miniProg" id="scrub" aria-label="Прогресс" role="slider">
+    <!-- Нижний мини-плеер -->
+    <footer class="mini glass neonEdge" id="mini">
+      <div class="miniLeft">
+        <div class="miniName" id="mName">No track</div>
+        <div class="miniHint" id="mHint">—</div>
+      </div>
+
+      <!-- прогресс (аккуратно, не поверх кнопок) -->
+      <div class="miniScrub" id="scrub" aria-label="Полоса прогресса">
         <div class="miniTrack"></div>
-        <div class="miniFill" id="prog"></div>
+        <div class="miniProgress" id="prog"></div>
         <div class="miniKnob" id="knob"></div>
       </div>
 
-      <div class="miniLeft">
-        <div id="mName" class="miniName">No track</div>
-        <div id="mHint" class="miniHint">—</div>
-      </div>
-
       <div class="miniCtrls">
-        <button class="iconBtn" id="prev" aria-label="Назад" title="Назад">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h2v12H6V6zm3.5 6l10 6V6l-10 6z"/></svg>
+        <button class="pBtn" id="prev" aria-label="Назад">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M11 7v10M20 7l-9 5 9 5V7z" fill="currentColor"/>
+          </svg>
         </button>
 
-        <button class="iconBtn main" id="toggle" aria-label="Play/Pause" title="Play/Pause">
-          <!-- play -->
-          <svg class="ico playIco" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-          <!-- pause -->
-          <svg class="ico pauseIco" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        <button class="pBtn pMain" id="toggle" aria-label="Пауза / Играть">
+          <svg class="ico playIco" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 7l10 5-10 5V7z" fill="currentColor"/>
+          </svg>
+          <svg class="ico pauseIco" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 7h3v10H8V7zm5 0h3v10h-3V7z" fill="currentColor"/>
+          </svg>
         </button>
 
-        <button class="iconBtn" id="next" aria-label="Вперёд" title="Вперёд">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 6h2v12h-2V6zM7 18l10-6L7 6v12z"/></svg>
+        <button class="pBtn" id="next" aria-label="Вперёд">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M13 7v10M4 7l9 5-9 5V7z" fill="currentColor"/>
+          </svg>
         </button>
       </div>
 
@@ -137,9 +176,8 @@
   </div>
 
   <script>
-    // сервер стейта
+    // твой сервер Render
     window.API_BASE = "https://backroom-server.onrender.com";
   </script>
-  <script src="/ui.js?v=1" defer></script>
 </body>
 </html>
