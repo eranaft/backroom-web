@@ -3,16 +3,20 @@
   --open:#e9e9ea;
   --closed:#6a6a6f;
   --timer:#b7b7bd;
-  --soft: rgba(233,233,234,.18);
-}
-body{
-  --warp: 0;          /* 0..1 насколько “разогнан” космос */
-  --starsBoost: 0;    /* 0..1 насколько “плотнее” звёзды */
+
+  /* дефолт для неона (чтобы не мигало до старта анимации) */
+  --n1: rgba(88,242,255,.22);
+  --n2: rgba(179,93,255,.18);
 }
 
 *{box-sizing:border-box;}
 html,body{height:100%;}
+
+/* управляющие параметры (их меняет JS) */
 body{
+  --warp: 0;          /* 0..1 */
+  --starsBoost: 0;    /* 0..1 */
+
   margin:0;
   height:100%;
   display:flex;
@@ -24,15 +28,14 @@ body{
   overflow:hidden;
 }
 
-/* тонкий “космос” без перегруза */
+/* ===== тонкий “космос” ===== */
 .cosmos{
   position:fixed;
   inset:0;
   pointer-events:none;
-  opacity:.85;
+  opacity:.90;
 }
 
-/* туман/небулы */
 .cosmos::before{
   content:"";
   position:absolute;
@@ -43,30 +46,19 @@ body{
     radial-gradient(900px 700px at 50% 85%, rgba(255,80,160,.06), transparent 60%),
     linear-gradient(180deg, rgba(0,0,0,.20), rgba(0,0,0,.65));
   filter: blur(18px) saturate(115%);
-  opacity: calc(.75 + var(--warp) * .25);
+  opacity: calc(.72 + var(--warp) * .28);
   animation: nebula 18s ease-in-out infinite;
   transform: translate3d(0,0,0);
   will-change: transform, opacity;
 }
 
-
 @keyframes nebula{
-  0%{
-    transform: translate3d(-1%, -1%, 0) scale(1.02);
-    opacity:.72;
-  }
-  50%{
-    transform: translate3d(1%, 1%, 0) scale(1.05);
-    opacity:.90;
-  }
-  100%{
-    transform: translate3d(-1%, -1%, 0) scale(1.02);
-    opacity:.72;
-  }
+  0%   { transform: translate3d(-1%, -1%, 0) scale(1.02); }
+  50%  { transform: translate3d( 1%,  1%, 0) scale(1.05); }
+  100% { transform: translate3d(-1%, -1%, 0) scale(1.02); }
 }
 
-
-/* звёзды (две “плёнки” для глубины) */
+/* звёзды (основной слой) */
 .cosmos::after{
   content:"";
   position:absolute;
@@ -77,11 +69,17 @@ body{
   background-size: 220px 220px, 320px 320px;
   background-position: 0 0, 80px 140px;
   animation: stars 28s linear infinite;
-  opacity: calc(.45 + var(--warp) * .35);
+  opacity: calc(.42 + var(--warp) * .38);
   will-change: transform, opacity;
 }
 
-/* дополнительная “пыль” звёзд, появляется постепенно */
+/* ВАЖНО: этого не хватало */
+@keyframes stars{
+  0%{ transform: translate3d(0,0,0); }
+  100%{ transform: translate3d(-140px,-100px,0); }
+}
+
+/* дополнительная “пыль” звёзд (нарастает по времени) */
 .cosmos .dust{
   position:absolute;
   inset:-30%;
@@ -91,7 +89,7 @@ body{
     radial-gradient(circle, rgba(255,71,154,.16) 0 1px, transparent 2px);
   background-size: 260px 260px, 340px 340px, 420px 420px;
   background-position: 40px 60px, 110px 190px, 210px 120px;
-  opacity: calc(0 + var(--starsBoost) * .55);
+  opacity: calc(var(--starsBoost) * .55);
   filter: blur(.2px);
   animation: stars2 22s linear infinite;
   mix-blend-mode: screen;
@@ -103,9 +101,7 @@ body{
   100%{ transform: translate3d(-200px,-140px,0); }
 }
 
-
-
-/* контент лобби */
+/* ===== контент ===== */
 .wrap{
   position:relative;
   z-index:2;
@@ -132,23 +128,26 @@ body{
   color:var(--open);
   cursor:pointer;
   animation: neonShift 18s ease-in-out infinite;
-  transition: opacity .25s ease, transform .35s cubic-bezier(.2,.8,.2,1);
+  transition: opacity .35s ease, transform .45s cubic-bezier(.2,.8,.2,1), text-shadow .55s ease;
   text-shadow:
-    0 0 10px rgba(233,233,234,.20),
-    0 0 22px var(--n1),
-    0 0 34px var(--n2);
+    0 0 10px rgba(233,233,234,.18),
+    0 0 24px var(--n1),
+    0 0 42px var(--n2);
 }
 
 .status.open:hover{
   opacity:.96;
   transform: translateY(-1px);
   text-shadow:
-    0 0 12px rgba(233,233,234,.24),
-    0 0 28px var(--n1),
-    0 0 46px var(--n2);
+    0 0 12px rgba(233,233,234,.22),
+    0 0 34px var(--n1),
+    0 0 58px var(--n2);
 }
 
-
+/* mobile */
+.status.open:active{
+  transform: translateY(0px) scale(.985);
+}
 
 .status.closed{
   color:var(--closed);
@@ -169,16 +168,3 @@ body{
   color:rgba(183,183,189,.65);
   font-size:11px;
 }
-
-/* ускорение космоса при hover на OPEN */
-body.hover-open .cosmos::before{
-  animation-duration: 10s; /* было 18s */
-  opacity: .95;
-}
-
-body.hover-open .cosmos::after{
-  animation-duration: 14s; /* было 28s */
-  opacity: .75;
-}
-
-
