@@ -3,16 +3,14 @@ const timerEl = document.getElementById('timer');
 const metaEl = document.getElementById('meta');
 const wrapEl = document.getElementById('wrap');
 
-const jumpFx = document.getElementById('jumpFx');
-
 const canvas = document.getElementById('stars');
 const ctx = canvas.getContext('2d', { alpha: true });
 
 function fmt(ms){
-  const s = Math.max(0, Math.floor(ms/1000));
-  const hh = String(Math.floor(s/3600)).padStart(2,'0');
-  const mm = String(Math.floor((s%3600)/60)).padStart(2,'0');
-  const ss = String(s%60).padStart(2,'0');
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const hh = String(Math.floor(s / 3600)).padStart(2, '0');
+  const mm = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
   return `${hh}:${mm}:${ss}`;
 }
 
@@ -63,71 +61,109 @@ async function tick(){
   }
 }
 
-/* ===== hover только на OPEN ===== */
-let hoveringOpen = false;
+/* ======================
+   Плавное включение эффектов
+   ====================== */
+const isTouchDevice = matchMedia('(pointer: coarse)').matches;
 
-function onEnter(){
-  if (lastState?.isOpen) hoveringOpen = true;
-}
-function onLeave(){
-  hoveringOpen = false;
-}
+let targetEngage = 0;  // 0..1 (хочу включить)
+let engage = 0;        // 0..1 (плавно включилось)
 
-statusEl.addEventListener('mouseenter', onEnter);
-statusEl.addEventListener('mouseleave', onLeave);
-statusEl.addEventListener('touchstart', onEnter, { passive:true });
-statusEl.addEventListener('touchend', onLeave, { passive:true });
-statusEl.addEventListener('touchcancel', onLeave, { passive:true });
-
-/* ===== управление параметрами эффекта ===== */
-let hold = 0;          // 0..1.6
-let warp = 0;          // 0..1
+let hold = 0;          // 0..1.6 (для “ускорения со временем”)
+let warp = 0;          // 0..1 (главный множитель)
 let tiltX = 0, tiltY = 0;
 let lastTs = performance.now();
 
 function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
-function smoothstep(t){ return t*t*(3-2*t); }
+function smoothstep(t){ return t * t * (3 - 2 * t); }
 
 function setVars(){
   document.body.style.setProperty('--warp', warp.toFixed(3));
 
-  // Фон: медленный и плавный, ускорение НЕ резкое
+  // фон: ускорение мягкое и медленное
   const baseSpeed = (lastState?.isOpen ? 28 : 34);
-  const minSpeed  = (lastState?.isOpen ? 18 : 30); // медленнее чем было
-  const s = baseSpeed - (baseSpeed - minSpeed) * clamp(warp,0,1);
+  const minSpeed  = (lastState?.isOpen ? 18 : 30);
+  const s = baseSpeed - (baseSpeed - minSpeed) * clamp(warp, 0, 1);
   document.body.style.setProperty('--bgSpeed', `${s.toFixed(2)}s`);
 
-  // Hue: тоже медленнее
+  // hue тоже мягко
   const hue = (lastState?.isOpen ? (warp * 80) : 0);
   document.body.style.setProperty('--bgHue', `${hue.toFixed(1)}deg`);
 
-  // наклон — только при удержании OPEN (очень слегка)
+  // наклон: только в engage
   document.body.style.setProperty('--tiltX', `${tiltX.toFixed(2)}deg`);
   document.body.style.setProperty('--tiltY', `${tiltY.toFixed(2)}deg`);
 
-  // немного усилим свечение текста в удержании (мягко)
+  // мягкое усиление свечения текста
   const glow = 0.10 + 0.08 * warp;
   document.body.style.setProperty('--textGlow', glow.toFixed(3));
 }
 
-/* наклон только при удержании OPEN */
+/* ======================
+   ПК: эффекты только при наведении на OPEN
+   Мобилка: эффекты при движении пальцем по экрану (если OPEN)
+   ====================== */
+function enterFromOpen(){
+  if (lastState?.isOpen) targetEngage = 1;
+}
+function leaveFromOpen(){
+  targetEngage = 0;
+}
+
+statusEl.addEventListener('mouseenter', () => {
+  if (!isTouchDevice) enterFromOpen();
+});
+statusEl.addEventListener('mouseleave', () => {
+  if (!isTouchDevice) leaveFromOpen();
+});
+
+// Tap по OPEN (мобилка): включаем, пока держит палец
+statusEl.addEventListener('touchstart', enterFromOpen, { passive:true });
+statusEl.addEventListener('touchend', leaveFromOpen, { passive:true });
+statusEl.addEventListener('touchcancel', leaveFromOpen, { passive:true });
+
+/* tilt: на ПК только когда навёл OPEN; на мобиле — когда водит пальцем */
 function applyPointerTilt(x, y){
-  if (!hoveringOpen) return;
   const r = wrapEl.getBoundingClientRect();
   const nx = (x - (r.left + r.width/2)) / (r.width/2);
   const ny = (y - (r.top + r.height/2)) / (r.height/2);
+
+  // лёгкий наклон
   tiltY = clamp(nx, -1, 1) * 6;
   tiltX = clamp(-ny, -1, 1) * 4;
 }
 
-window.addEventListener('mousemove', (e) => applyPointerTilt(e.clientX, e.clientY), { passive:true });
-window.addEventListener('touchmove', (e) => {
-  const t = e.touches?.[0];
-  if (t) applyPointerTilt(t.clientX, t.clientY);
+window.addEventListener('mousemove', (e) => {
+  // ПК: tilt только когда engage включен (то есть hover на OPEN)
+  if (isTouchDevice) return;
+  if (targetEngage < 0.5) return;
+  applyPointerTilt(e.clientX, e.clientY);
 }, { passive:true });
 
-/* ===== Stars: равномерно по всему экрану + мягкий дрейф ===== */
-let W=0,H=0,DPR=1;
+window.addEventListener('touchmove', (e) => {
+  const t = e.touches?.[0];
+  if (!t) return;
+
+  // Мобилка: если OPEN, то движение пальца включает эффекты везде
+  if (lastState?.isOpen) targetEngage = 1;
+
+  applyPointerTilt(t.clientX, t.clientY);
+}, { passive:true });
+
+// когда отпустил палец — выключаем эффекты (если не держит OPEN)
+document.body.addEventListener('touchend', () => {
+  // если палец отпущен и не жмёт OPEN — выключаем
+  targetEngage = 0;
+}, { passive:true });
+
+document.body.addEventListener('touchcancel', () => {
+  targetEngage = 0;
+}, { passive:true });
+
+/* ======================
+   Canvas stars
+   ====================== */
+let W=0, H=0, DPR=1;
 let stars = [];
 
 function resize(){
@@ -141,52 +177,48 @@ function resize(){
   canvas.style.height = H + 'px';
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 
-  // меньше “шум”: чуть меньше плотность, но равномерно
   const count = Math.floor((W * H) / 12000);
   stars = new Array(count).fill(0).map(() => ({
     x: Math.random()*W,
     y: Math.random()*H,
     r: 0.6 + Math.random()*1.5,
     a: 0.10 + Math.random()*0.45,
-    // единое направление + небольшой разброс
+    // единое направление (космос) + небольшой разброс
     vx: 0.18 + Math.random()*0.10,
     vy: -0.06 + Math.random()*0.12,
-    tw: 0.5 + Math.random()*1.2,
+    tw: 0.45 + Math.random()*1.1,
     ph: Math.random()*Math.PI*2
   }));
 }
 window.addEventListener('resize', resize);
 resize();
 
-function drawStars(ts, dt){
-  ctx.clearRect(0,0,W,H);
+function drawStars(ts){
+  ctx.clearRect(0, 0, W, H);
 
   const open = !!lastState?.isOpen;
 
-  // скорость: всегда чуть движется; при удержании OPEN — чуть быстрее
-  const baseSpeed = open ? 0.40 : 0.18;
-  const boost = (open && hoveringOpen) ? (0.90 + warp*0.70) : 0.0;
-  const speed = baseSpeed + boost;
+  // базовая скорость — очень лёгкая
+  const baseSpeed = open ? 0.32 : 0.14;
 
-  // CLOSED: twinkle намного мягче и реже
+  // ускорение от engage + warp (плавное)
+  const speed = baseSpeed + (open ? (engage * (0.55 + warp*0.55)) : 0);
+
+  // CLOSED: мерцание мягче и реже
   const twMul = open ? 1.0 : 0.55;
 
   for (const s of stars){
-    // движение (без “воды”: без колебаний, просто дрейф)
     s.x += s.vx * speed;
     s.y += s.vy * speed;
 
-    // wrap
     if (s.x > W + 10) s.x = -10;
     if (s.x < -10) s.x = W + 10;
     if (s.y > H + 10) s.y = -10;
     if (s.y < -10) s.y = H + 10;
 
-    // плавное мерцание (очень мягкое)
     const tw = (Math.sin(ts*0.001*s.tw*twMul + s.ph) + 1) * 0.5; // 0..1
-    const alpha = s.a * (0.55 + tw*0.45);
+    const alpha = s.a * (0.62 + tw*0.38);
 
-    // цвет glow: OPEN холоднее, CLOSED теплее и слабее
     const glow = open
       ? `rgba(88,242,255,${alpha*0.08})`
       : `rgba(255,110,120,${alpha*0.05})`;
@@ -203,48 +235,60 @@ function drawStars(ts, dt){
   }
 }
 
-/* ===== Альтернативный переход (без гиперстримов) =====
-   Идея: “белая вспышка + лёгкий зум + fade”, а звёзды чуть ускоряются
-*/
+/* ======================
+   Переход в комнату: без пятна
+   Просто мягкое ускорение + быстрый fade (без overlay)
+   ====================== */
 let jumping = false;
+
 statusEl.addEventListener('click', () => {
   if (!lastState?.isOpen || jumping) return;
 
   jumping = true;
-  document.body.classList.add('jumping');
 
-  // форсируем короткое ускорение звёзд (но без туннеля)
-  hoveringOpen = true;
+  // мягко разгоняем на короткое время
+  targetEngage = 1;
   hold = 1.6;
   warp = 1;
-  setVars();
 
   setTimeout(() => {
     location.href = '/room.html';
-  }, 520);
+  }, 420);
 });
 
+/* ======================
+   Main loop
+   ====================== */
 function frame(ts){
   const dt = Math.min(0.05, (ts - lastTs)/1000);
   lastTs = ts;
 
   const open = !!lastState?.isOpen;
-  const engaged = open && hoveringOpen;
 
+  // Плавно приближаем engage
+  engage += (targetEngage - engage) * 0.08;
+
+  // “engaged” учитывает плавность
+  const engaged = open && engage > 0.02;
+
+  // hold растёт только когда engaged (для постепенного ускорения)
   if (engaged) hold = clamp(hold + dt*0.95, 0, 1.6);
   else hold = clamp(hold - dt*1.35, 0, 1.6);
 
   const t = smoothstep(hold/1.6);
-  const targetWarp = open ? (engaged ? clamp(0.08 + 0.75*t, 0, 1) : 0) : 0;
+
+  // warp: плавно, с нарастанием
+  const targetWarp = open ? clamp(0.05 + 0.75*t, 0, 1) * engage : 0;
   warp += (targetWarp - warp) * 0.07;
 
+  // если эффекты выключены — наклон затухает
   if (!engaged){
     tiltX *= 0.85;
     tiltY *= 0.85;
   }
 
   setVars();
-  drawStars(ts, dt);
+  drawStars(ts);
 
   requestAnimationFrame(frame);
 }
