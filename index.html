@@ -7,16 +7,19 @@
   <link rel="stylesheet" href="/lobby.css" />
 </head>
 <body>
-  <div class="cosmos"><div class="dust"></div></div>
+  <div class="cosmos"></div>
 
-<main class="wrap" id="wrap">
-  <div id="status" class="status closed" aria-disabled="true">CLOSED</div>
-  <div id="timer" class="timer"></div>
-  <div class="meta" id="meta"></div>
-</main>
+  <!-- РАНДОМНЫЕ ЗВЁЗДЫ -->
+  <canvas id="stars"></canvas>
+
+  <main class="wrap" id="wrap">
+    <div id="status" class="status closed" aria-disabled="true">CLOSED</div>
+    <div id="timer" class="timer"></div>
+    <div class="meta" id="meta"></div>
+  </main>
 
   <script>
-    window.API_BASE = "https://backroom-server.onrender.com";
+    window.API_BASE = "REPLACE_WITH_RENDER_URL";
   </script>
   <script src="/app.js"></script>
 </body>
