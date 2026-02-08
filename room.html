@@ -8,40 +8,35 @@
 </head>
 
 <body>
-  <!-- space -->
+  <!-- deep space -->
   <div class="bg"></div>
+  <div class="aura"></div>
   <div class="vignette"></div>
   <canvas id="stars"></canvas>
 
-  <!-- neon flash for transitions -->
-  <div class="neonFlash" id="neonFlash"></div>
-
   <div class="shell" id="shell">
-    <!-- NAV (нижe) -->
-    <header class="top neonTile neonThin">
-      <nav class="tabs neonTile neonThin" aria-label="Навигация">
+    <!-- CENTER HUD -->
+    <header class="hud" id="hud">
+      <div class="brandMark" aria-hidden="true">
+        <span class="brandText" data-text="BACKROOM">BACKROOM</span>
+      </div>
+
+      <nav class="tabs" aria-label="Навигация">
         <button class="tab active" data-route="home" data-i18n="tab_home">Главная</button>
         <button class="tab" data-route="library" data-i18n="tab_library">Библиотека</button>
         <button class="tab" data-route="player" data-i18n="tab_player">Плеер</button>
         <button class="tab" data-route="game" data-i18n="tab_game">Игра</button>
       </nav>
 
-      <div class="actions">
-        <a class="a neonThin" href="/index.html" data-i18n="exit">ВЫХОД</a>
-      </div>
+      <a class="exitBtn" href="/index.html" data-i18n="exit">Выход</a>
     </header>
 
-    <!-- BRAND under overlay menu -->
-    <div class="brandMark" aria-hidden="true">
-      <span class="brandText">BACKROOM</span>
-    </div>
-
-    <!-- pages (virtual) -->
+    <!-- PAGES -->
     <main class="stage" id="stage">
       <!-- HOME -->
       <section class="page active" data-page="home">
-        <div class="card neonTile reflect">
-          <div class="kicker" data-i18n="welcome_kicker">ПРИВЕТСТВИЕ</div>
+        <div class="card glass reflect">
+          <div class="kicker" data-i18n="welcome_kicker">Приветствие</div>
           <div class="title softNeonText">KRAMSKOY</div>
           <div class="subtitle" data-i18n="welcome_sub">
             Ночная комната. Строго. Мрачно. Живой неон — только по граням.
@@ -49,21 +44,21 @@
           </div>
 
           <div class="row">
-            <button class="btn primary neonThin" data-go="library" data-i18n="enter">ВОЙТИ</button>
-            <button class="btn neonThin" data-go="player" data-i18n="open_player">ОТКРЫТЬ ПЛЕЕР</button>
+            <button class="btn primary" data-go="library" data-i18n="enter">Войти</button>
+            <button class="btn" data-go="player" data-i18n="open_player">Открыть плеер</button>
           </div>
         </div>
       </section>
 
       <!-- LIBRARY -->
       <section class="page" data-page="library">
-        <div class="card neonTile reflect wide">
+        <div class="card glass reflect wide">
           <div class="headRow">
             <div>
-              <div class="kicker" data-i18n="cass_kicker">КАССЕТЫ</div>
+              <div class="kicker" data-i18n="cass_kicker">Кассеты</div>
               <div class="title2" data-i18n="library_title">Библиотека</div>
             </div>
-            <input class="search neonThin" id="search" data-i18n-ph="search_ph" placeholder="Поиск…" />
+            <input class="search" id="search" data-i18n-ph="search_ph" placeholder="Поиск…" />
           </div>
 
           <div class="list" id="list"></div>
@@ -72,53 +67,53 @@
 
       <!-- PLAYER -->
       <section class="page" data-page="player">
-        <div class="card neonTile reflect wide">
+        <div class="card glass reflect wide">
           <div class="headRow">
             <div>
-              <div class="kicker" data-i18n="now_kicker">СЕЙЧАС</div>
+              <div class="kicker" data-i18n="now_kicker">Сейчас</div>
               <div class="title2" id="pTitle">—</div>
               <div class="subtitle2" id="pSub">KRAMSKOY • BACKROOM</div>
             </div>
-            <div class="badge neonThin" id="windowBadge">window: —</div>
+            <div class="badge" id="windowBadge">window: —</div>
           </div>
 
           <div class="playerGrid">
-            <div class="panel neonTile inner reflectMini">
+            <div class="panel glass inner reflectMini">
               <div class="panelTitle" data-i18n="desc_title">Описание</div>
               <div class="desc" id="pDesc" data-i18n="desc_empty">Выбери трек в библиотеке.</div>
             </div>
 
-            <div class="panel neonTile inner reflectMini">
+            <div class="panel glass inner reflectMini">
               <div class="panelTitle" data-i18n="chapters_title">Тайминги</div>
               <div class="chapters" id="chapters"></div>
             </div>
           </div>
 
           <div class="row">
-            <button class="btn neonThin" id="yandexBtn">YANDEX</button>
-            <button class="btn neonThin" id="spotifyBtn">SPOTIFY</button>
+            <button class="btn" id="yandexBtn">YANDEX</button>
+            <button class="btn" id="spotifyBtn">SPOTIFY</button>
           </div>
         </div>
       </section>
 
       <!-- GAME -->
       <section class="page" data-page="game">
-        <div class="card neonTile reflect">
-          <div class="kicker" data-i18n="game_kicker">ИГРА</div>
-          <div class="title softNeonText" data-i18n="in_dev">В РАЗРАБОТКЕ</div>
+        <div class="card glass reflect">
+          <div class="kicker" data-i18n="game_kicker">Игра</div>
+          <div class="title softNeonText" data-i18n="in_dev">В разработке</div>
           <div class="subtitle" data-i18n="game_sub">
             “Твоя победа — моя песня”.
             <br/>Тут появится вход в игру и прогресс разработки.
           </div>
           <div class="row">
-            <button class="btn neonThin" data-go="home" data-i18n="back_home">НА ГЛАВНУЮ</button>
+            <button class="btn" data-go="home" data-i18n="back_home">На главную</button>
           </div>
         </div>
       </section>
     </main>
 
-    <!-- GLOBAL MINI PLAYER (always plays) -->
-    <footer class="mini neonTile neonThin reflectMini" id="mini">
+    <!-- GLOBAL MINI PLAYER -->
+    <footer class="mini glass reflectMini" id="mini">
       <div class="miniLeft">
         <div class="miniMeta">
           <div class="miniName" id="mName">No track</div>
@@ -127,9 +122,9 @@
       </div>
 
       <div class="miniCtrls">
-        <button class="chip neonThin" id="prev" data-i18n="prev">Назад</button>
-        <button class="chip strong neonThin" id="toggle" data-i18n="play">Играть</button>
-        <button class="chip neonThin" id="next" data-i18n="next">Вперёд</button>
+        <button class="chip" id="prev" data-i18n="prev">Назад</button>
+        <button class="chip strong" id="toggle" data-i18n="play">Играть</button>
+        <button class="chip" id="next" data-i18n="next">Вперёд</button>
       </div>
 
       <div class="miniRight">
