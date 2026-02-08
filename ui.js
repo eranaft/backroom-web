@@ -327,35 +327,50 @@ async function poll(){
 setInterval(poll, 2000);
 poll();
 
-/* =========================
-   Audio (demo)
-========================= */
-const audio = document.getElementById("audio");
-// ===== Mini scrub UI =====
 const mini = document.getElementById("mini");
+const scrub = document.getElementById("scrub");
+const prog = document.getElementById("prog");
+const knob = document.getElementById("knob");
 
-const scrub = document.createElement("div");
-scrub.className = "miniScrub";
-mini.appendChild(scrub);
-
-const prog = document.createElement("div");
-prog.className = "miniProgress";
-mini.appendChild(prog);
-
-const knob = document.createElement("div");
-knob.className = "miniKnob";
-mini.appendChild(knob);
-
-function setProg(p){ // p 0..1
+function setProg(p){
   const clamped = Math.max(0, Math.min(1, p));
-  const leftPx = 12 + (mini.clientWidth - 24) * clamped;
   prog.style.width = `${clamped * 100}%`;
-  knob.style.left = `${leftPx}px`;
+
+  const r = scrub.getBoundingClientRect();
+  const x = r.width * clamped;
+  knob.style.left = `${x}px`;
 }
+
+audio.addEventListener("loadedmetadata", () => setProg(0));
 audio.addEventListener("timeupdate", () => {
   if (!audio.duration) return;
   setProg(audio.currentTime / audio.duration);
 });
+audio.addEventListener("ended", () => setProg(1));
+
+let dragging = false;
+function seekFromClientX(clientX){
+  const r = scrub.getBoundingClientRect();
+  const x = Math.max(0, Math.min(r.width, clientX - r.left));
+  const p = r.width ? (x / r.width) : 0;
+  setProg(p);
+  if (audio.duration) audio.currentTime = p * audio.duration;
+}
+
+scrub.addEventListener("pointerdown", (e) => {
+  dragging = true;
+  scrub.setPointerCapture(e.pointerId);
+  seekFromClientX(e.clientX);
+});
+scrub.addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+  seekFromClientX(e.clientX);
+});
+scrub.addEventListener("pointerup", (e) => {
+  dragging = false;
+  try{ scrub.releasePointerCapture(e.pointerId); }catch{}
+});
+
 audio.addEventListener("loadedmetadata", () => setProg(0));
 audio.addEventListener("ended", () => setProg(1));
 
