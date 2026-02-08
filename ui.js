@@ -181,12 +181,12 @@ stage.addEventListener("touchend", (e)=>{
   }
 },{passive:true});
 
-/* =========================
-   Tab indicator (smooth slide)
-========================= */
 let indicator = null;
 if (tabsWrap){
-  // FIX: не дублируем индикатор
+  // FIX: если вдруг уже есть 2+ индикатора — оставляем один
+  const all = [...tabsWrap.querySelectorAll(".tabIndicator")];
+  if (all.length > 1) all.slice(1).forEach(n => n.remove());
+
   indicator = tabsWrap.querySelector(".tabIndicator");
   if (!indicator){
     indicator = document.createElement("span");
