@@ -120,37 +120,34 @@ body{
   user-select:none;
 }
 
-.status.open{
-  color:var(--open);
-  cursor:pointer;
-  transition: opacity .15s ease, text-shadow .15s ease, transform .15s ease;
-}
-.status.open:hover{
-  opacity:.92;
-  text-shadow: 0 0 18px var(--soft);
-  transform: translateY(-1px);
+/* медленная смена неон-градиента */
+@keyframes neonShift{
+  0%   { --n1: rgba(88,242,255,.22); --n2: rgba(179,93,255,.18); }
+  33%  { --n1: rgba(255,71,154,.18); --n2: rgba(88,242,255,.18); }
+  66%  { --n1: rgba(179,93,255,.22); --n2: rgba(255,71,154,.16); }
+  100% { --n1: rgba(88,242,255,.22); --n2: rgba(179,93,255,.18); }
 }
 
 .status.open{
   color:var(--open);
   cursor:pointer;
-  transition:
-    opacity .25s ease,
-    text-shadow .35s ease,
-    transform .35s cubic-bezier(.2,.8,.2,1);
-}
-
-.status.open:hover{
-  opacity:.95;
+  animation: neonShift 18s ease-in-out infinite;
+  transition: opacity .25s ease, transform .35s cubic-bezier(.2,.8,.2,1);
   text-shadow:
-    0 0 12px rgba(233,233,234,.22),
-    0 0 28px rgba(120,180,255,.18);
-  transform: translateY(-1px);
+    0 0 10px rgba(233,233,234,.20),
+    0 0 22px var(--n1),
+    0 0 34px var(--n2);
 }
 
-.status.open:active{
-  transform: translateY(0px) scale(.985);
+.status.open:hover{
+  opacity:.96;
+  transform: translateY(-1px);
+  text-shadow:
+    0 0 12px rgba(233,233,234,.24),
+    0 0 28px var(--n1),
+    0 0 46px var(--n2);
 }
+
 
 
 .status.closed{
@@ -183,4 +180,5 @@ body.hover-open .cosmos::after{
   animation-duration: 14s; /* было 28s */
   opacity: .75;
 }
+
 
