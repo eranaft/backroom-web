@@ -3,67 +3,93 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>BACKROOM</title>
-  <link rel="stylesheet" href="/style.css" />
+  <title>BACKROOM — Room</title>
+  <link rel="stylesheet" href="/room.css" />
 </head>
+
 <body>
-  <!-- фон и частицы -->
-  <div class="bg-blobs">
-    <div class="blob b1" style="top:40px; left:20px;"></div>
-    <div class="blob b2" style="top:220px; right:-40px;"></div>
-    <div class="blob b3" style="bottom:-80px; left:260px;"></div>
-  </div>
-  <div class="particles"></div>
+  <!-- фон комнаты -->
+  <div class="room-bg"></div>
+  <div class="room-grid"></div>
+  <div class="room-glow"></div>
 
-  <main class="wrap">
-    <section class="shell" id="shell">
-      <!-- Dock -->
-      <aside class="glass dock">
-        <div class="brand">BACKROOM</div>
+  <main class="shell" id="shell">
+    <!-- Top bar -->
+    <header class="topbar glass">
+      <div class="brand">
+        <span class="dot"></span>
+        <span>BACKROOM</span>
+      </div>
 
-        <div class="dockBtns">
-          <div class="pill active" title="Room">
-            <div class="dot"></div>
-          </div>
-          <div class="pill" title="Archive (soon)">
-            <div class="dot" style="opacity:.55"></div>
-          </div>
-          <div class="pill" title="Notes (soon)">
-            <div class="dot" style="opacity:.40"></div>
-          </div>
-        </div>
+      <div class="search">
+        <input id="q" type="text" placeholder="Поиск треков…" autocomplete="off" />
+      </div>
 
-        <a class="exitBtn" href="/">EXIT</a>
+      <button class="exit" id="exitBtn" aria-label="Exit">EXIT</button>
+    </header>
+
+    <section class="layout">
+      <!-- Left nav -->
+      <aside class="nav glass">
+        <div class="navTitle">LIBRARY</div>
+        <button class="navItem active" data-tab="all">All</button>
+        <button class="navItem" data-tab="new">New</button>
+        <button class="navItem" data-tab="liked">Liked</button>
+
+        <div class="divider"></div>
+
+        <div class="navTitle">LINKS</div>
+        <a class="navItem link" id="yandexLink" href="#" target="_blank" rel="noreferrer">Yandex Music</a>
+        <a class="navItem link" id="spotifyLink" href="#" target="_blank" rel="noreferrer">Spotify</a>
       </aside>
 
-      <!-- Center stage -->
-      <section class="glass stage">
-        <div class="topbar">
-          <div class="statusRow">
-            <div class="bigStatus" id="roomStatus">OPEN</div>
-            <div class="subStatus" id="roomMeta">window: —</div>
+      <!-- Center: tracks -->
+      <section class="center">
+        <div class="hero glass">
+          <div class="heroText">
+            <div class="heroTitle">Room</div>
+            <div class="heroSub">Dark mode. Neon core. No noise.</div>
           </div>
-          <div class="subStatus" id="roomHint">enter quietly</div>
+          <div class="heroBadge" id="windowBadge">window: —</div>
         </div>
 
-        <div class="now">
-          <div class="nowTitle">NOW PLAYING</div>
-          <div id="nowPlaying"></div>
+        <div class="tracks glass" id="tracks">
+          <!-- cards injected -->
         </div>
       </section>
 
-      <!-- Right panel -->
-      <aside class="glass side">
-        <div class="sideTitle">DROPS</div>
-        <div id="drops"></div>
+      <!-- Right: now playing -->
+      <aside class="player glass" id="player">
+        <div class="nowTitle">NOW</div>
+
+        <div class="cover" id="cover">
+          <div class="coverGlow"></div>
+          <div class="coverLabel" id="coverLabel">No track</div>
+        </div>
+
+        <div class="meta">
+          <div class="tTitle" id="tTitle">—</div>
+          <div class="tSub" id="tSub">KRAMSKOY • BACKROOM</div>
+        </div>
+
+        <audio id="audio" preload="metadata" controls></audio>
+
+        <div class="controlsRow">
+          <button class="chip" id="prevBtn">Prev</button>
+          <button class="chip strong" id="playBtn">Play</button>
+          <button class="chip" id="nextBtn">Next</button>
+        </div>
+
+        <div class="small">
+          <span id="statusLine">loading…</span>
+        </div>
       </aside>
     </section>
   </main>
 
   <script>
-    // НЕ ЗАБУДЬ: здесь должен быть твой Render URL
     window.API_BASE = "https://backroom-server.onrender.com";
   </script>
-  <script src="/room.js"></script>
+  <script src="/room.js" defer></script>
 </body>
 </html>
