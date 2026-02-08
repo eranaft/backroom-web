@@ -317,14 +317,16 @@ body{
 }
 
 /* граница с “текущим светом” */
+/* ===== НЕОНОВЫЕ “ЛАМПЫ” ПО КРАЯМ (НЕ КРУТИМ, А ПЕРЕЛИВАЕМ) ===== */
 .neonEdge::after{
   content:"";
   position:absolute;
   inset:0;
   padding: 1px;
   border-radius: inherit;
+
   background:
-    conic-gradient(from 0deg,
+    linear-gradient(90deg,
       var(--edgeA),
       var(--edgeB),
       var(--edgeC),
@@ -332,13 +334,19 @@ body{
       var(--edgeE),
       var(--edgeA)
     );
+  background-size: 300% 100%;
+
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
 
-  opacity:.65;
-  animation: edgeSpin 10s linear infinite;
+  opacity:.62;
+  animation: edgeFlow 14s ease-in-out infinite;
   pointer-events:none;
+  filter:
+    drop-shadow(0 0 12px rgba(0,220,255,.12))
+    drop-shadow(0 0 18px rgba(140,90,255,.10))
+    drop-shadow(0 0 22px rgba(255,80,160,.08));
 }
 
 /* рассеивание как от ламп */
@@ -367,10 +375,10 @@ body{
   pointer-events:none;
 }
 
-@keyframes edgeSpin{
-  0%{ transform: rotate(0deg); filter: drop-shadow(0 0 12px rgba(0,220,255,.12)); }
-  50%{ filter: drop-shadow(0 0 16px rgba(140,90,255,.10)); }
-  100%{ transform: rotate(360deg); filter: drop-shadow(0 0 12px rgba(255,80,160,.10)); }
+@keyframes edgeFlow{
+  0%{ background-position: 0% 50%; }
+  50%{ background-position: 100% 50%; }
+  100%{ background-position: 0% 50%; }
 }
 
 @keyframes edgeGlowBreath{
@@ -724,4 +732,9 @@ body{
   .btn:hover, .navItem:hover, .smallBtn:hover, .item:hover, .chapter:hover, .chip:hover, .pBtn:hover, .navExit:hover{
     filter:none !important;
   }
+}
+@keyframes edgeFlow{
+  0%{ background-position: 0% 50%; }
+  50%{ background-position: 100% 50%; }
+  100%{ background-position: 0% 50%; }
 }
