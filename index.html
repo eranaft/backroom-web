@@ -4,17 +4,20 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>BACKROOM</title>
- <link rel="stylesheet" href="/ui.css?v=11">
-<script src="/ui.js?v=11"></script>
+
+  <!-- ЛОББИ: используем lobby.css, а не ui.css -->
+  <link rel="stylesheet" href="/lobby.css?v=11" />
 
 </head>
 <body>
-  <!-- неоновый фон -->
+  <!-- фон / аура -->
   <div class="bg-neon"></div>
+  <div class="neonAura"></div>
 
-  <!-- звёзды hyperspace -->
+  <!-- звёзды -->
   <canvas id="stars"></canvas>
 
+  <!-- контент -->
   <main class="wrap" id="wrap">
     <div id="status" class="status closed" aria-disabled="true">CLOSED</div>
     <div id="timer" class="timer"></div>
@@ -24,6 +27,8 @@
   <script>
     window.API_BASE = "https://backroom-server.onrender.com";
   </script>
-  <script src="/app.js" defer></script>
+
+  <!-- ЛОББИ-логика -->
+  <script src="/app.js?v=11" defer></script>
 </body>
 </html>
