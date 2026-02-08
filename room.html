@@ -3,22 +3,65 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ROOM</title>
+  <title>BACKROOM</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-  <main class="wrap">
-    <div class="room">
-      <div class="topline">
-        <div class="label">BACKROOM</div>
-        <a class="back" href="/">EXIT</a>
-      </div>
+  <!-- фон и частицы -->
+  <div class="bg-blobs">
+    <div class="blob b1" style="top:40px; left:20px;"></div>
+    <div class="blob b2" style="top:220px; right:-40px;"></div>
+    <div class="blob b3" style="bottom:-80px; left:260px;"></div>
+  </div>
+  <div class="particles"></div>
 
-      <div id="tracks" class="tracks"></div>
-    </div>
+  <main class="wrap">
+    <section class="shell" id="shell">
+      <!-- Dock -->
+      <aside class="glass dock">
+        <div class="brand">BACKROOM</div>
+
+        <div class="dockBtns">
+          <div class="pill active" title="Room">
+            <div class="dot"></div>
+          </div>
+          <div class="pill" title="Archive (soon)">
+            <div class="dot" style="opacity:.55"></div>
+          </div>
+          <div class="pill" title="Notes (soon)">
+            <div class="dot" style="opacity:.40"></div>
+          </div>
+        </div>
+
+        <a class="exitBtn" href="/">EXIT</a>
+      </aside>
+
+      <!-- Center stage -->
+      <section class="glass stage">
+        <div class="topbar">
+          <div class="statusRow">
+            <div class="bigStatus" id="roomStatus">OPEN</div>
+            <div class="subStatus" id="roomMeta">window: —</div>
+          </div>
+          <div class="subStatus" id="roomHint">enter quietly</div>
+        </div>
+
+        <div class="now">
+          <div class="nowTitle">NOW PLAYING</div>
+          <div id="nowPlaying"></div>
+        </div>
+      </section>
+
+      <!-- Right panel -->
+      <aside class="glass side">
+        <div class="sideTitle">DROPS</div>
+        <div id="drops"></div>
+      </aside>
+    </section>
   </main>
 
   <script>
+    // НЕ ЗАБУДЬ: здесь должен быть твой Render URL
     window.API_BASE = "https://backroom-server.onrender.com";
   </script>
   <script src="/room.js"></script>
