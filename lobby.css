@@ -1,15 +1,20 @@
 :root{
   --bg:#05060a;
-  --open:#e9e9ea;
-  --closed:#6a6a6f;
-  --timer:#b7b7bd;
 
-  --warp: 0;          /* 0..1 из JS */
+  --text: rgba(255,255,255,.90);
+  --closed: rgba(255,255,255,.28);
+  --timer: rgba(255,255,255,.62);
+
+  --warp: 0;        /* 0..1 из JS */
   --tiltX: 0deg;
   --tiltY: 0deg;
 
-  --neonSpeed: 12s;   /* JS будет менять */
-  --hue: 0deg;        /* JS будет менять */
+  /* скорость перелива фона */
+  --bgSpeed: 18s;
+  --bgHue: 0deg;
+
+  /* CLOSED mood */
+  --closedHue: 0deg;
 }
 
 *{box-sizing:border-box;}
@@ -27,50 +32,87 @@ body{
   overflow:hidden;
 }
 
-/* туман/небулы (оставляем) */
-.cosmos{
+/* ===== неоновый фон (ГРАДИЕНТ НА ФОНЕ) ===== */
+.bg-neon{
   position:fixed;
-  inset:0;
+  inset:-40%;
   pointer-events:none;
-  opacity:.90;
+  filter: blur(22px) saturate(140%);
+  opacity: .85;
+  transform: translate3d(0,0,0);
+  animation: bgFlow var(--bgSpeed) ease-in-out infinite;
 }
-.cosmos::before{
+
+.bg-neon::before{
   content:"";
   position:absolute;
-  inset:-40%;
+  inset:0;
   background:
-    radial-gradient(800px 500px at 20% 15%, rgba(120,80,255,.10), transparent 60%),
-    radial-gradient(900px 600px at 80% 25%, rgba(60,220,255,.10), transparent 60%),
-    radial-gradient(900px 700px at 50% 85%, rgba(255,80,160,.06), transparent 60%),
-    linear-gradient(180deg, rgba(0,0,0,.20), rgba(0,0,0,.70));
-  filter: blur(18px) saturate(120%);
-  opacity: calc(.70 + var(--warp) * .30);
-  animation: nebula 18s ease-in-out infinite;
-  transform: translate3d(0,0,0);
-  will-change: transform, opacity;
+    radial-gradient(900px 600px at 20% 20%, rgba(88,242,255,.14), transparent 60%),
+    radial-gradient(900px 620px at 80% 25%, rgba(179,93,255,.12), transparent 60%),
+    radial-gradient(900px 700px at 50% 85%, rgba(255,71,154,.09), transparent 60%),
+    linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.82));
+  filter: hue-rotate(var(--bgHue));
+  opacity: calc(.68 + var(--warp) * .25);
 }
-@keyframes nebula{
+
+@keyframes bgFlow{
   0%   { transform: translate3d(-1%, -1%, 0) scale(1.02); }
   50%  { transform: translate3d( 1%,  1%, 0) scale(1.05); }
   100% { transform: translate3d(-1%, -1%, 0) scale(1.02); }
 }
 
-/* Canvas звёзды */
+/* CLOSED: фон краснее и спокойнее */
+body.is-closed .bg-neon::before{
+  background:
+    radial-gradient(980px 660px at 20% 20%, rgba(255,80,110,.14), transparent 62%),
+    radial-gradient(980px 660px at 80% 25%, rgba(255,140,90,.11), transparent 62%),
+    radial-gradient(900px 700px at 55% 85%, rgba(160,40,60,.10), transparent 62%),
+    linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,.88));
+  opacity: .78;
+}
+
+/* ===== canvas stars ===== */
 #stars{
   position:fixed;
   inset:0;
   width:100%;
   height:100%;
   pointer-events:none;
-  opacity:1;
 }
 
-/* контент */
+/* ===== jump FX overlay ===== */
+.jumpFx{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  opacity:0;
+  background:
+    radial-gradient(closest-side at 50% 50%, rgba(255,255,255,.12), transparent 55%),
+    radial-gradient(closest-side at 50% 50%, rgba(88,242,255,.10), transparent 62%),
+    radial-gradient(closest-side at 50% 50%, rgba(179,93,255,.08), transparent 68%);
+  filter: blur(6px);
+  transform: scale(1);
+}
+
+body.jumping .jumpFx{
+  animation: jumpFlash .72s cubic-bezier(.2,.8,.2,1) forwards;
+}
+
+@keyframes jumpFlash{
+  0%   { opacity:0; transform: scale(1); }
+  10%  { opacity:.35; }
+  45%  { opacity:.65; transform: scale(1.12); }
+  100% { opacity:0; transform: scale(1.35); }
+}
+
+/* ===== content ===== */
 .wrap{
   position:relative;
   z-index:2;
   width:min(720px, 92vw);
   text-align:center;
+
   transform: rotateX(var(--tiltX)) rotateY(var(--tiltY));
   transform-style: preserve-3d;
   transition: transform .12s ease-out;
@@ -83,61 +125,61 @@ body{
   user-select:none;
 }
 
-/* ОЩУТИМЫЙ перелив: градиент внутри текста + движение + hue */
+/* Текст: оставляем легкий вкус, но НЕ вырвиглаз */
 .status.open{
   cursor:pointer;
+  color: rgba(255,255,255,.88);
 
-  background: linear-gradient(
-    90deg,
-    rgba(88,242,255,.95),
-    rgba(179,93,255,.95),
-    rgba(255,71,154,.95),
-    rgba(88,242,255,.95)
+  /* очень мягкий градиент внутри текста (почти незаметный) */
+  background: linear-gradient(90deg,
+    rgba(255,255,255,.92),
+    rgba(220,235,255,.86),
+    rgba(255,230,245,.84),
+    rgba(255,255,255,.92)
   );
-  background-size: 240% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
+  background-size: 220% 100%;
+  -webkit-background-clip:text;
+  background-clip:text;
   color: transparent;
 
-  filter: hue-rotate(var(--hue));
-  animation: textFlow var(--neonSpeed) ease-in-out infinite;
+  animation: textSoft 16s ease-in-out infinite;
+  text-shadow:
+    0 0 10px rgba(255,255,255,.10),
+    0 0 22px rgba(88,242,255,.10),
+    0 0 28px rgba(179,93,255,.08);
 
   transition: transform .45s cubic-bezier(.2,.8,.2,1), opacity .35s ease, text-shadow .55s ease;
-  text-shadow:
-    0 0 10px rgba(233,233,234,.10),
-    0 0 34px rgba(88,242,255,.18),
-    0 0 50px rgba(179,93,255,.16);
 }
 
-@keyframes textFlow{
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+@keyframes textSoft{
+  0%{ background-position: 0% 50%; }
+  50%{ background-position: 100% 50%; }
+  100%{ background-position: 0% 50%; }
 }
 
 .status.open:hover{
   opacity:.98;
   transform: translateY(-1px);
   text-shadow:
-    0 0 12px rgba(233,233,234,.14),
-    0 0 44px rgba(88,242,255,.22),
-    0 0 70px rgba(255,71,154,.18);
+    0 0 12px rgba(255,255,255,.14),
+    0 0 34px rgba(88,242,255,.14),
+    0 0 46px rgba(255,71,154,.10);
 }
 
 .status.open:active{
   transform: translateY(0px) scale(.985);
 }
 
-/* CLOSED */
 .status.closed{
-  color: rgba(200,200,205,.45);
+  color: var(--closed);
   cursor:default;
+  text-shadow:none;
 }
 
 .timer{
   margin-top:18px;
   font-weight:200;
-  color:rgba(233,233,234,.65);
+  color: var(--timer);
   font-size:14px;
   min-height:20px;
 }
@@ -145,16 +187,6 @@ body{
 .meta{
   margin-top:12px;
   font-weight:200;
-  color:rgba(183,183,189,.65);
+  color: rgba(255,255,255,.40);
   font-size:11px;
-}
-
-/* CLOSED mood: фон теплее */
-body.is-closed .cosmos::before{
-  background:
-    radial-gradient(900px 520px at 20% 15%, rgba(255,60,90,.12), transparent 60%),
-    radial-gradient(900px 620px at 80% 25%, rgba(255,120,80,.10), transparent 60%),
-    radial-gradient(900px 700px at 50% 85%, rgba(160,40,60,.08), transparent 60%),
-    linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.78));
-  opacity: .78;
 }
