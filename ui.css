@@ -774,3 +774,172 @@ body{
 .iconBtn, .chip{
   -webkit-tap-highlight-color: transparent;
 }
+
+
+
+/* =========================
+   FINAL LOOK PATCH (composition + player + tabs + neon)
+   paste at the VERY END of ui.css
+========================= */
+
+/* 0) чуть глубже фон */
+:root{
+  --bg:#02030a;
+}
+
+/* 1) HUD (табы) — визуально собрать в единый центр */
+.hud{
+  margin-top: 6px !important;
+  gap: 8px !important;
+}
+.tabs{
+  padding: 7px 8px !important;
+  gap: 8px !important;
+  background: rgba(0,0,0,.22) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  box-shadow:
+    0 18px 60px rgba(0,0,0,.55),
+    0 0 0 1px rgba(255,255,255,.02) inset;
+}
+.tab{
+  height:34px !important;
+  padding: 0 14px !important;
+  background: rgba(0,0,0,.16) !important;
+  border-color: rgba(255,255,255,.08) !important;
+  font-size: 12px;
+}
+.tabIndicator{
+  top:7px !important;
+  bottom:7px !important;
+  left:8px !important;
+  background: rgba(255,255,255,.045) !important;
+  box-shadow:
+    0 0 0 1px rgba(0,220,255,.14) inset,
+    0 0 26px rgba(0,220,255,.09),
+    0 0 44px rgba(140,90,255,.07) !important;
+}
+
+/* 2) “Большая панель плеера” — убрать пустоту, собрать сетку */
+.card.wide{
+  padding: 22px !important;
+}
+.playerGrid{
+  grid-template-columns: 1.25fr .75fr !important;
+  gap: 14px !important;
+}
+.panel{
+  padding: 16px !important;
+  border-radius: 18px !important;
+  background: rgba(0,0,0,.10) !important;
+  border: 1px solid rgba(255,255,255,.07) !important;
+}
+.panelTitle{
+  letter-spacing: .22em !important;
+  opacity: .9;
+}
+.desc{
+  font-size: 13px !important;
+  color: rgba(255,255,255,.62) !important;
+}
+.chapters{
+  max-height: 240px;
+  overflow: auto;
+  padding-right: 4px;
+}
+.chapter{
+  background: rgba(0,0,0,.10) !important;
+  border-color: rgba(255,255,255,.07) !important;
+}
+.chapter:hover{
+  border-color: rgba(0,220,255,.14) !important;
+}
+
+/* 3) Стекло “дороже” + неон не как рамка, а как живое свечение */
+.glass{
+  background: linear-gradient(180deg, rgba(16,18,28,.62), rgba(7,9,14,.38)) !important;
+  border-color: rgba(255,255,255,.08) !important;
+}
+.glass::before{
+  opacity: .70 !important;
+  filter:
+    drop-shadow(0 0 18px rgba(0,220,255,.12))
+    drop-shadow(0 0 28px rgba(140,90,255,.10))
+    drop-shadow(0 0 34px rgba(255,80,160,.08)) !important;
+}
+.glass::after{
+  opacity: .28 !important; /* меньше “тумана” внутри, выглядит чище */
+}
+
+/* 4) Мини-плеер снизу — премиум бар, кнопки вправо, баланс */
+.mini{
+  width: min(1120px, 96vw) !important;
+  height: 84px !important;
+  padding: 26px 16px 14px !important;
+  border-radius: 24px !important;
+  background: rgba(0,0,0,.16) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+}
+.miniName{
+  font-size: 13px !important;
+  font-weight: 320 !important;
+  letter-spacing: .06em !important;
+}
+.miniHint{
+  font-size: 11px !important;
+  opacity: .9;
+}
+
+/* прогресс — тоньше и “дороже” */
+.miniScrub{ top: 12px !important; height: 20px !important; }
+.miniTrack{ height: 2px !important; background: rgba(255,255,255,.075) !important; }
+.miniProgress{
+  height: 2px !important;
+  box-shadow:
+    0 0 14px rgba(0,220,255,.14),
+    0 0 22px rgba(140,90,255,.10) !important;
+}
+.miniKnob{
+  width: 9px !important;
+  height: 9px !important;
+  opacity: .88 !important;
+}
+
+/* кнопки вправо и одинаковые */
+.miniCtrls{
+  gap: 10px !important;
+}
+.pBtn{
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 18px !important;
+  background: rgba(0,0,0,.16) !important;
+  border-color: rgba(255,255,255,.09) !important;
+}
+.pMain{
+  width: 56px !important;
+  border-color: rgba(0,220,255,.16) !important;
+  box-shadow: 0 0 22px rgba(0,220,255,.10) !important;
+}
+
+/* 5) На активном воспроизведении — чуть живее (но без мерцания) */
+.pMain.isPlaying{
+  box-shadow:
+    0 0 18px rgba(0,220,255,.14),
+    0 0 34px rgba(140,90,255,.12) !important;
+}
+.pMain.isPlaying::after{
+  opacity: .68 !important;
+}
+
+/* 6) Мобилка — чтобы всё центрировалось и не разваливалось */
+@media (max-width: 760px){
+  .shell{ padding: 10px !important; }
+  .card{ padding: 18px !important; }
+  .playerGrid{ grid-template-columns: 1fr !important; }
+  .list{ max-height: 46vh !important; }
+  .mini{
+    height: 92px !important;
+    padding-top: 30px !important;
+  }
+  .miniCtrls{ gap: 8px !important; }
+}
