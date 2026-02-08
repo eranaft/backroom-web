@@ -64,98 +64,133 @@ function getLang(){
   const stored = localStorage.getItem("lang");
   return (fromHash || stored || "ru").toLowerCase().startsWith("en") ? "en" : "ru";
 }
-
 let LANG = getLang();
-
-function t(key){
-  return (DICT[LANG] && DICT[LANG][key]) || (DICT.ru[key] || key);
-}
+const t = (k) => (DICT[LANG] && DICT[LANG][k]) || (DICT.ru[k] || k);
 
 function applyI18n(){
-  document.querySelectorAll("[data-i18n]").forEach(el => {
-    el.textContent = t(el.dataset.i18n);
-  });
-  document.querySelectorAll("[data-i18n-ph]").forEach(el => {
-    el.setAttribute("placeholder", t(el.dataset.i18nPh));
-  });
+  document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = t(el.dataset.i18n));
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => el.setAttribute("placeholder", t(el.dataset.i18nPh)));
 
-  // multiline subtitles
+  // multiline
   document.querySelectorAll("[data-i18n='welcome_sub'],[data-i18n='game_sub']").forEach(el=>{
     el.innerHTML = t(el.dataset.i18n).replace(/\n/g, "<br/>");
   });
 }
-
 applyI18n();
 
 /* =========================
-   Router + transitions
+   Router (swipe-like)
 ========================= */
 const tabs = [...document.querySelectorAll(".tab")];
 const pages = [...document.querySelectorAll(".page")];
-const flash = document.getElementById("neonFlash");
+const stage = document.getElementById("stage");
 
+const ORDER = ["home","library","player","game"];
+let currentRoute = "home";
 let transitioning = false;
 
 function setActiveTab(route){
   tabs.forEach(b => b.classList.toggle("active", b.dataset.route === route));
 }
 
-function showPage(route){
+function showPage(route, dir=0){
   if (transitioning) return;
+  if (!ORDER.includes(route)) return;
+
   const next = pages.find(p => p.dataset.page === route);
-  const cur = pages.find(p => p.classList.contains("active"));
+  const cur  = pages.find(p => p.dataset.page === currentRoute);
   if (!next || next === cur) return;
 
   transitioning = true;
-  document.body.classList.add("is-transitioning");
 
-  // Drive warp for stars acceleration smoothly
-  boostWarp(1.0); // starts ramp
+  // direction classes for swipe feel
+  next.classList.remove("from-left","from-right");
+  if (dir < 0) next.classList.add("from-left");
+  if (dir > 0) next.classList.add("from-right");
 
-  // switch pages with extra time for animation
+  // accelerate stars only
+  warpTarget = 1;
+  warpHold = Math.min(1.2, warpHold + 0.2);
+
+  // switch active
   if (cur) cur.classList.remove("active");
   next.classList.add("active");
 
+  currentRoute = route;
   setActiveTab(route);
   history.replaceState(null, "", `#${route}`);
 
-  // end transition
   setTimeout(() => {
-    document.body.classList.remove("is-transitioning");
-    boostWarp(0); // ramp down
+    warpTarget = 0;
     transitioning = false;
-  }, 620);
+  }, 560);
 }
 
-tabs.forEach(b => b.addEventListener("click", () => showPage(b.dataset.route)));
-document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => showPage(b.dataset.go)));
+tabs.forEach(b => b.addEventListener("click", () => {
+  const to = b.dataset.route;
+  const dir = Math.sign(ORDER.indexOf(to) - ORDER.indexOf(currentRoute));
+  showPage(to, dir);
+}));
+document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => {
+  const to = b.dataset.go;
+  const dir = Math.sign(ORDER.indexOf(to) - ORDER.indexOf(currentRoute));
+  showPage(to, dir);
+}));
 
 window.addEventListener("load", () => {
-  const r = (location.hash || "#home").replace(/^#/, "");
-  // allow "#lang=en" etc
-  const route = r.includes("=") ? "home" : r;
-  showPage(route || "home");
+  const raw = (location.hash || "#home").replace(/^#/, "");
+  const route = raw.includes("=") ? "home" : raw;
+  currentRoute = ORDER.includes(route) ? route : "home";
+  pages.forEach(p => p.classList.toggle("active", p.dataset.page === currentRoute));
+  setActiveTab(currentRoute);
 });
 
+/* swipe left/right on mobile */
+let sx=0, sy=0, swiping=false;
+stage.addEventListener("touchstart", (e)=>{
+  const t0 = e.touches?.[0];
+  if (!t0) return;
+  sx = t0.clientX; sy = t0.clientY; swiping = true;
+},{passive:true});
+
+stage.addEventListener("touchend", (e)=>{
+  if (!swiping) return;
+  swiping = false;
+  const t0 = e.changedTouches?.[0];
+  if (!t0) return;
+
+  const dx = t0.clientX - sx;
+  const dy = t0.clientY - sy;
+
+  if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy)*1.4){
+    const i = ORDER.indexOf(currentRoute);
+    const ni = dx < 0 ? Math.min(ORDER.length-1, i+1) : Math.max(0, i-1);
+    const dir = dx < 0 ? 1 : -1;
+    showPage(ORDER[ni], dir);
+  }
+},{passive:true});
+
 /* =========================
-   Parallax (subtle)
+   “Живой” UI (reactive)
+   - parallax affects bg + glass
 ========================= */
 let tx=0, ty=0, cx=0, cy=0;
+
 function setTargetFromXY(x,y){
   const nx = (x / window.innerWidth) * 2 - 1;
   const ny = (y / window.innerHeight) * 2 - 1;
-  tx = nx * 16;
-  ty = ny * 12;
+  tx = nx * 18;
+  ty = ny * 14;
 }
 window.addEventListener("mousemove", e => setTargetFromXY(e.clientX, e.clientY), { passive:true });
 window.addEventListener("touchmove", e => {
-  const t = e.touches?.[0];
-  if (t) setTargetFromXY(t.clientX, t.clientY);
+  const t0 = e.touches?.[0];
+  if (t0) setTargetFromXY(t0.clientX, t0.clientY);
 }, { passive:true });
 
 function rafPar(){
-  cx += (tx - cx) * 0.06;
-  cy += (ty - cy) * 0.06;
+  cx += (tx - cx) * 0.07;
+  cy += (ty - cy) * 0.07;
   document.documentElement.style.setProperty("--parX", `${cx.toFixed(2)}px`);
   document.documentElement.style.setProperty("--parY", `${cy.toFixed(2)}px`);
   requestAnimationFrame(rafPar);
@@ -163,19 +198,15 @@ function rafPar(){
 requestAnimationFrame(rafPar);
 
 /* =========================
-   Stars with warp accel (smooth)
+   Stars (calm + warp accel)
 ========================= */
 const canvas = document.getElementById("stars");
 const ctx = canvas.getContext("2d", { alpha:true });
 
 let W=0,H=0,DPR=1, stars=[];
-let warp = 0;        // current 0..1.6
-let warpTarget = 0;  // target
-let warpHold = 0;    // grows while target >0
-
-function boostWarp(v){
-  warpTarget = v; // 0 or 1
-}
+let warp = 0;
+let warpTarget = 0;
+let warpHold = 0;
 
 function resize(){
   DPR = Math.min(2, window.devicePixelRatio || 1);
@@ -187,14 +218,14 @@ function resize(){
   canvas.style.height = H + "px";
   ctx.setTransform(DPR,0,0,DPR,0,0);
 
-  const count = Math.floor((W*H)/12000); // чуть больше звёзд = больше “пространства”
+  const count = Math.floor((W*H)/11000);
   stars = new Array(count).fill(0).map(() => ({
     x: Math.random()*W,
     y: Math.random()*H,
-    r: 0.6 + Math.random()*1.7,
-    a: 0.08 + Math.random()*0.42,
-    vx: 0.10 + Math.random()*0.12,
-    vy: -0.04 + Math.random()*0.10,
+    r: 0.6 + Math.random()*1.8,
+    a: 0.06 + Math.random()*0.42,
+    vx: 0.10 + Math.random()*0.14,
+    vy: -0.05 + Math.random()*0.12,
     tw: 0.35 + Math.random()*1.2,
     ph: Math.random()*Math.PI*2
   }));
@@ -203,18 +234,16 @@ window.addEventListener("resize", resize);
 resize();
 
 function drawStars(ts){
-  // warp ramps smooth, with hold to create “acceleration feeling”
-  warp += (warpTarget - warp) * 0.08;
-  if (warpTarget > 0.01) warpHold = Math.min(1.6, warpHold + 0.03);
+  warp += (warpTarget - warp) * 0.10;
+  if (warpTarget > 0.02) warpHold = Math.min(1.25, warpHold + 0.03);
   else warpHold = Math.max(0, warpHold - 0.05);
 
-  const warpMix = Math.min(1.6, warpHold) * warp; // 0..1.6
+  const warpMix = warpHold * warp; // 0..~1.25
   document.documentElement.style.setProperty("--warp", warpMix.toFixed(3));
 
   ctx.clearRect(0,0,W,H);
 
-  // base drift + warp accel (no tunnel, just faster drift)
-  const speed = 1.0 + warpMix * 3.2;
+  const speed = 1.0 + warpMix * 3.0;
 
   for (const s of stars){
     s.x += s.vx * speed;
@@ -233,10 +262,9 @@ function drawStars(ts){
     ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
     ctx.fill();
 
-    // nuclear neon halo (subtle but present)
-    ctx.fillStyle = `rgba(88,242,255,${a*0.07})`;
+    ctx.fillStyle = `rgba(0,220,255,${a*0.06})`;
     ctx.beginPath();
-    ctx.arc(s.x, s.y, s.r*3.0, 0, Math.PI*2);
+    ctx.arc(s.x, s.y, s.r*2.8, 0, Math.PI*2);
     ctx.fill();
   }
 
@@ -245,7 +273,7 @@ function drawStars(ts){
 requestAnimationFrame(drawStars);
 
 /* =========================
-   Global audio (plays everywhere)
+   Global audio (no UI jump)
 ========================= */
 const audio = document.getElementById("audio");
 const mName = document.getElementById("mName");
@@ -314,31 +342,32 @@ let filtered = [...TRACKS];
 let idx = -1;
 
 function renderList(){
+  if (!listEl) return;
   listEl.innerHTML = "";
-  filtered.forEach(t => {
+  filtered.forEach(tk => {
     const row = document.createElement("div");
-    row.className = "item reflectMini";
+    row.className = "item glass reflectMini";
     row.innerHTML = `
       <div class="itemL">
-        <div class="name">${escapeHtml(t.title)}</div>
-        <div class="hint">${escapeHtml(t.hint || "")}</div>
+        <div class="name">${escapeHtml(tk.title)}</div>
+        <div class="hint">${escapeHtml(tk.hint || "")}</div>
       </div>
       <div class="itemR">
-        <button class="smallBtn neonThin" data-act="y">Yandex</button>
-        <button class="smallBtn neonThin" data-act="s">Spotify</button>
-        <button class="smallBtn primary neonThin" data-act="p">Play</button>
+        <button class="smallBtn" data-act="y">Yandex</button>
+        <button class="smallBtn" data-act="s">Spotify</button>
+        <button class="smallBtn primary" data-act="p">Play</button>
       </div>
     `;
-    row.querySelector('[data-act="p"]').onclick = () => playTrackById(t.id);
-    row.querySelector('[data-act="y"]').onclick = () => openLink(t.yandex);
-    row.querySelector('[data-act="s"]').onclick = () => openLink(t.spotify);
+    row.querySelector('[data-act="p"]').onclick = () => playTrackById(tk.id);
+    row.querySelector('[data-act="y"]').onclick = () => openLink(tk.yandex);
+    row.querySelector('[data-act="s"]').onclick = () => openLink(tk.spotify);
     listEl.appendChild(row);
   });
 
   if (filtered.length === 0){
     const empty = document.createElement("div");
-    empty.className = "item";
-    empty.textContent = "Ничего не найдено.";
+    empty.className = "item glass";
+    empty.textContent = LANG === "en" ? "Nothing found." : "Ничего не найдено.";
     listEl.appendChild(empty);
   }
 }
@@ -352,28 +381,28 @@ function playTrackById(id){
   const i = TRACKS.findIndex(x => x.id === id);
   if (i === -1) return;
   idx = i;
-  const t = TRACKS[idx];
+  const tk = TRACKS[idx];
 
-  audio.src = t.url;
+  audio.src = tk.url;
   audio.play().catch(()=>{});
 
-  mName.textContent = t.title;
-  mHint.textContent = t.hint || "—";
+  mName.textContent = tk.title;
+  mHint.textContent = tk.hint || "—";
 
-  pTitle.textContent = t.title;
-  if (pDesc) pDesc.textContent = t.desc || t(t.desc_empty);
+  pTitle.textContent = tk.title;
+  pDesc.textContent = tk.desc || t("desc_empty");
 
   chaptersEl.innerHTML = "";
-  (t.chapters || []).forEach(ch => {
+  (tk.chapters || []).forEach(ch => {
     const c = document.createElement("div");
-    c.className = "chapter neonThin";
+    c.className = "chapter";
     c.innerHTML = `<div class="time">${ch.t}</div><div class="note">${escapeHtml(ch.note||"")}</div>`;
     c.onclick = () => { audio.currentTime = ch.s; audio.play().catch(()=>{}); };
     chaptersEl.appendChild(c);
   });
 
-  yandexBtn.onclick = () => openLink(t.yandex);
-  spotifyBtn.onclick = () => openLink(t.spotify);
+  yandexBtn.onclick = () => openLink(tk.yandex);
+  spotifyBtn.onclick = () => openLink(tk.spotify);
 
   toggleBtn.textContent = t("pause");
 }
@@ -393,10 +422,7 @@ prevBtn.onclick = prev;
 nextBtn.onclick = next;
 
 toggleBtn.onclick = () => {
-  if (!audio.src){
-    playTrackById(TRACKS[0].id);
-    return;
-  }
+  if (!audio.src){ playTrackById(TRACKS[0].id); return; }
   if (audio.paused){ audio.play().catch(()=>{}); toggleBtn.textContent = t("pause"); }
   else { audio.pause(); toggleBtn.textContent = t("play"); }
 };
@@ -413,7 +439,6 @@ if (searchEl){
     renderList();
   });
 }
-
 renderList();
 
 function escapeHtml(s){
