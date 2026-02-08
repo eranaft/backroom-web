@@ -53,37 +53,49 @@ async function tick(){
     metaEl.textContent = 'offline';
   }
 }
-const body = document.body;
+
+/* ===== Космос: плавный разгон с “прогревом” ===== */
 let hoveringOpen = false;
-let warp = 0;        // 0..1
-let starsBoost = 0;  // 0..1
-let rafId = null;
+
+// текущие значения, которые уходят к целевым
+let warp = 0;        // 0..~1.2
+let starsBoost = 0;  // 0..~1.2
+
+// “как долго держим” (секунды), чтобы эффект нарастал
+let hold = 0;        // 0..1.5 (примерно)
+let lastTs = performance.now();
+
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
 
 function setVars(){
+  // можно оставить как есть, CSS это скушает
   document.body.style.setProperty('--warp', warp.toFixed(3));
   document.body.style.setProperty('--starsBoost', starsBoost.toFixed(3));
 }
 
-function loop(){
-  // target растёт, пока держишь hover, и плавно падает когда отпустил
-  const target = hoveringOpen ? 1 : 0;
+function loop(ts){
+  const dt = Math.min(0.05, (ts - lastTs) / 1000); // защита от скачков
+  lastTs = ts;
 
-  // плавное приближение (без рывков)
-  warp += (target - warp) * 0.04;
+  // “прогрев”: пока держим hover — растёт, отпустили — плавно падает
+  if (hoveringOpen) hold = clamp(hold + dt * 0.9, 0, 1.6);
+  else hold = clamp(hold - dt * 1.3, 0, 1.6);
 
-  // звёзды нарастают “дольше”, чтобы было ощущение прогрева
-  const starsTarget = hoveringOpen ? 1 : 0;
-  starsBoost += (starsTarget - starsBoost) * 0.02;
+  // Нелинейная кривая: сначала мягко, потом заметнее
+  // (чем выше hold, тем сильнее target)
+  const t = hold / 1.6;                 // 0..1
+  const easeUp = t * t * (3 - 2 * t);   // smoothstep 0..1
+
+  const targetWarp = hoveringOpen ? (0.25 + 1.05 * easeUp) : 0;
+  const targetStars = hoveringOpen ? (0.15 + 1.15 * easeUp) : 0;
+
+  // Плавное приближение
+  warp += (targetWarp - warp) * 0.06;
+  starsBoost += (targetStars - starsBoost) * 0.045;
 
   setVars();
-  rafId = requestAnimationFrame(loop);
+  requestAnimationFrame(loop);
 }
-
-function startAnim(){
-  if (!rafId) rafId = requestAnimationFrame(loop);
-}
-
-startAnim();
 
 function onEnter(){
   if (lastState?.isOpen) hoveringOpen = true;
@@ -100,7 +112,7 @@ statusEl.addEventListener('touchstart', onEnter, { passive:true });
 statusEl.addEventListener('touchend', onLeave, { passive:true });
 statusEl.addEventListener('touchcancel', onLeave, { passive:true });
 
-
+requestAnimationFrame(loop);
 
 setInterval(tick, 1000);
 tick();
