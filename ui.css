@@ -781,4 +781,99 @@ body{
     opacity:.85;
   }
 }
+/* ===== MINI PLAYER: нормальная геометрия прогресса ===== */
+.mini{
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 16px;
+  overflow: hidden;
+}
+
+/* делаем реально liquid-glass */
+.mini.glass{
+  background: linear-gradient(180deg, rgba(18,20,28,.42), rgba(10,12,18,.18));
+  border: 1px solid rgba(255,255,255,.06);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+}
+
+/* прогресс теперь внизу плитки и НЕ лезет на кнопки */
+.miniScrub{
+  position: absolute;
+  left: 18px;
+  right: calc(18px + var(--ctrlW, 170px)); /* важное */
+  bottom: 10px;
+  height: 18px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.miniTrack{
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: rgba(255,255,255,.10);
+}
+
+.miniProgress{
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--c1), var(--c2), var(--c3), var(--c4), var(--c5), var(--c1));
+  background-size: 240% 100%;
+  animation: progFlow 10s ease-in-out infinite;
+  box-shadow:
+    0 0 10px rgba(0,220,255,.14),
+    0 0 16px rgba(140,90,255,.10);
+}
+
+.miniKnob{
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: rgba(255,255,255,.90);
+  box-shadow:
+    0 0 10px rgba(0,220,255,.14),
+    0 0 18px rgba(255,80,160,.10);
+}
+
+/* кнопки чуть крупнее (на твоём скрине они реально мелкие) */
+.pBtn{ width: 50px; height: 50px; border-radius: 16px; }
+.pMain{ width: 58px; }
+
+/* ===== NAV: активная вкладка = неоновая обводка/свечение (без заливки) ===== */
+.navItem.isActive{
+  color: rgba(255,255,255,.85);
+  -webkit-text-stroke: .6px rgba(255,255,255,.10);
+  text-shadow:
+    0 0 10px rgba(0,220,255,.22),
+    0 0 18px rgba(140,90,255,.14),
+    0 0 26px rgba(255,80,160,.10);
+}
+
+/* мягкий “живой” перелив свечения */
+.navItem.isActive{
+  animation: navPulse 3.2s ease-in-out infinite;
+}
+@keyframes navPulse{
+  0%{ filter: hue-rotate(0deg); opacity: .82; }
+  50%{ filter: hue-rotate(16deg); opacity: 1; }
+  100%{ filter: hue-rotate(0deg); opacity: .82; }
+}
+
 
