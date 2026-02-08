@@ -2,6 +2,7 @@ const statusEl = document.getElementById('status');
 const timerEl = document.getElementById('timer');
 const metaEl = document.getElementById('meta');
 const wrapEl = document.getElementById('wrap');
+
 const jumpFx = document.getElementById('jumpFx');
 
 const canvas = document.getElementById('stars');
@@ -62,10 +63,23 @@ async function tick(){
   }
 }
 
-/* ========= Управление эффектами =========
-   Движение/наклон/ускорение: ТОЛЬКО когда держим OPEN
-*/
+/* ===== hover только на OPEN ===== */
 let hoveringOpen = false;
+
+function onEnter(){
+  if (lastState?.isOpen) hoveringOpen = true;
+}
+function onLeave(){
+  hoveringOpen = false;
+}
+
+statusEl.addEventListener('mouseenter', onEnter);
+statusEl.addEventListener('mouseleave', onLeave);
+statusEl.addEventListener('touchstart', onEnter, { passive:true });
+statusEl.addEventListener('touchend', onLeave, { passive:true });
+statusEl.addEventListener('touchcancel', onLeave, { passive:true });
+
+/* ===== управление параметрами эффекта ===== */
 let hold = 0;          // 0..1.6
 let warp = 0;          // 0..1
 let tiltX = 0, tiltY = 0;
@@ -77,43 +91,33 @@ function smoothstep(t){ return t*t*(3-2*t); }
 function setVars(){
   document.body.style.setProperty('--warp', warp.toFixed(3));
 
-  // наклон — только если hover OPEN, иначе возвращаем в 0
-  document.body.style.setProperty('--tiltX', `${tiltX.toFixed(2)}deg`);
-  document.body.style.setProperty('--tiltY', `${tiltY.toFixed(2)}deg`);
-
-  // ускоряем перелив ФОНА (не текста) при warp
-  const baseSpeed = (lastState?.isOpen ? 18 : 26);
-  const minSpeed = (lastState?.isOpen ? 8 : 22);
+  // Фон: медленный и плавный, ускорение НЕ резкое
+  const baseSpeed = (lastState?.isOpen ? 28 : 34);
+  const minSpeed  = (lastState?.isOpen ? 18 : 30); // медленнее чем было
   const s = baseSpeed - (baseSpeed - minSpeed) * clamp(warp,0,1);
   document.body.style.setProperty('--bgSpeed', `${s.toFixed(2)}s`);
 
-  // hue фона: чем больше warp — тем сильнее перелив
-  const hue = (lastState?.isOpen ? (warp * 140) : 0);
+  // Hue: тоже медленнее
+  const hue = (lastState?.isOpen ? (warp * 80) : 0);
   document.body.style.setProperty('--bgHue', `${hue.toFixed(1)}deg`);
+
+  // наклон — только при удержании OPEN (очень слегка)
+  document.body.style.setProperty('--tiltX', `${tiltX.toFixed(2)}deg`);
+  document.body.style.setProperty('--tiltY', `${tiltY.toFixed(2)}deg`);
+
+  // немного усилим свечение текста в удержании (мягко)
+  const glow = 0.10 + 0.08 * warp;
+  document.body.style.setProperty('--textGlow', glow.toFixed(3));
 }
 
-function onEnter(){
-  if (lastState?.isOpen) hoveringOpen = true;
-}
-function onLeave(){
-  hoveringOpen = false;
-}
-
-/* hover только на OPEN */
-statusEl.addEventListener('mouseenter', onEnter);
-statusEl.addEventListener('mouseleave', onLeave);
-statusEl.addEventListener('touchstart', onEnter, { passive:true });
-statusEl.addEventListener('touchend', onLeave, { passive:true });
-statusEl.addEventListener('touchcancel', onLeave, { passive:true });
-
-/* Наклон — только когда держим OPEN (и только от движения пальца/мыши) */
+/* наклон только при удержании OPEN */
 function applyPointerTilt(x, y){
-  if (!hoveringOpen) return; // <-- важно (п.3)
+  if (!hoveringOpen) return;
   const r = wrapEl.getBoundingClientRect();
   const nx = (x - (r.left + r.width/2)) / (r.width/2);
   const ny = (y - (r.top + r.height/2)) / (r.height/2);
-  tiltY = clamp(nx, -1, 1) * 8;
-  tiltX = clamp(-ny, -1, 1) * 6;
+  tiltY = clamp(nx, -1, 1) * 6;
+  tiltX = clamp(-ny, -1, 1) * 4;
 }
 
 window.addEventListener('mousemove', (e) => applyPointerTilt(e.clientX, e.clientY), { passive:true });
@@ -122,16 +126,14 @@ window.addEventListener('touchmove', (e) => {
   if (t) applyPointerTilt(t.clientX, t.clientY);
 }, { passive:true });
 
-/* ========= Hyperspace stars (3D) ========= */
-let W=0,H=0,DPR=1, CX=0,CY=0;
+/* ===== Stars: равномерно по всему экрану + мягкий дрейф ===== */
+let W=0,H=0,DPR=1;
 let stars = [];
-let seedAngle = 0; // будет медленно вращать “туннель” со временем удержания
 
 function resize(){
   DPR = Math.min(2, window.devicePixelRatio || 1);
   W = Math.floor(window.innerWidth);
   H = Math.floor(window.innerHeight);
-  CX = W/2; CY = H/2;
 
   canvas.width = Math.floor(W * DPR);
   canvas.height = Math.floor(H * DPR);
@@ -139,136 +141,89 @@ function resize(){
   canvas.style.height = H + 'px';
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 
-  const count = Math.floor((W * H) / 14000); // плотность (можно увеличить)
-  stars = new Array(count).fill(0).map(() => newStar(true));
+  // меньше “шум”: чуть меньше плотность, но равномерно
+  const count = Math.floor((W * H) / 12000);
+  stars = new Array(count).fill(0).map(() => ({
+    x: Math.random()*W,
+    y: Math.random()*H,
+    r: 0.6 + Math.random()*1.5,
+    a: 0.10 + Math.random()*0.45,
+    // единое направление + небольшой разброс
+    vx: 0.18 + Math.random()*0.10,
+    vy: -0.06 + Math.random()*0.12,
+    tw: 0.5 + Math.random()*1.2,
+    ph: Math.random()*Math.PI*2
+  }));
 }
-
-function newStar(randomZ=false){
-  // x,y в -1..1, z в 0..1 (глубина)
-  const x = (Math.random()*2 - 1);
-  const y = (Math.random()*2 - 1);
-  const z = randomZ ? Math.random() : 1;
-  const r = 0.6 + Math.random()*1.8;
-  const a = 0.15 + Math.random()*0.55;
-  return { x, y, z, r, a };
-}
-
 window.addEventListener('resize', resize);
 resize();
 
-function drawStars(dt){
+function drawStars(ts, dt){
   ctx.clearRect(0,0,W,H);
 
   const open = !!lastState?.isOpen;
-  // CLOSED: звезды стоят, только плавно “дышат”
-  // OPEN + hover: включаем гиперпространство
-  const engaged = open && hoveringOpen;
 
-  // плавная “дыхалка” без резкости (п.2/7)
-  const breathe = 0.55 + 0.45 * Math.sin(performance.now()*0.0006);
+  // скорость: всегда чуть движется; при удержании OPEN — чуть быстрее
+  const baseSpeed = open ? 0.40 : 0.18;
+  const boost = (open && hoveringOpen) ? (0.90 + warp*0.70) : 0.0;
+  const speed = baseSpeed + boost;
 
-  // скорость “вылета” по z
-  const speed = engaged ? (0.25 + warp*2.8) : 0;
+  // CLOSED: twinkle намного мягче и реже
+  const twMul = open ? 1.0 : 0.55;
 
-  // со временем удержания туннель слегка вращается (п.4)
-  seedAngle += (engaged ? 0.9 : 0.15) * dt;
+  for (const s of stars){
+    // движение (без “воды”: без колебаний, просто дрейф)
+    s.x += s.vx * speed;
+    s.y += s.vy * speed;
 
-  const ang = seedAngle * 0.35 * (engaged ? 1 : 0.2);
-  const ca = Math.cos(ang), sa = Math.sin(ang);
+    // wrap
+    if (s.x > W + 10) s.x = -10;
+    if (s.x < -10) s.x = W + 10;
+    if (s.y > H + 10) s.y = -10;
+    if (s.y < -10) s.y = H + 10;
 
-  for (let i=0;i<stars.length;i++){
-    const s = stars[i];
+    // плавное мерцание (очень мягкое)
+    const tw = (Math.sin(ts*0.001*s.tw*twMul + s.ph) + 1) * 0.5; // 0..1
+    const alpha = s.a * (0.55 + tw*0.45);
 
-    // обновляем глубину
-    if (engaged){
-      s.z -= speed * dt;
-      if (s.z <= 0.02){
-        stars[i] = newStar();
-        continue;
-      }
-    }
+    // цвет glow: OPEN холоднее, CLOSED теплее и слабее
+    const glow = open
+      ? `rgba(88,242,255,${alpha*0.08})`
+      : `rgba(255,110,120,${alpha*0.05})`;
 
-    // вращаем x/y слегка, создаёт “живой туннель”
-    let x = s.x, y = s.y;
-    const rx = x*ca - y*sa;
-    const ry = x*sa + y*ca;
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+    ctx.fill();
 
-    // проекция: чем меньше z, тем сильнее “разлёт” к краям (как Star Wars)
-    const scale = 0.75;
-    const px = CX + (rx / s.z) * (W * 0.22) * scale;
-    const py = CY + (ry / s.z) * (W * 0.22) * scale;
-
-    // если улетели за экран — пересоздаём
-    if (px < -200 || px > W+200 || py < -200 || py > H+200){
-      stars[i] = newStar();
-      continue;
-    }
-
-    // длина “стрима” при скорости
-    const streak = engaged ? (12 + warp*120) : 0;
-
-    const alpha = s.a * (open ? 1 : 0.55) * (open ? 1 : breathe);
-    const base = open ? `rgba(255,255,255,${alpha})` : `rgba(255,140,160,${alpha*0.65})`;
-
-    if (engaged){
-      // направление стрима от центра
-      const dx = (px - CX);
-      const dy = (py - CY);
-      const len = Math.max(1, Math.sqrt(dx*dx + dy*dy));
-      const ux = dx/len, uy = dy/len;
-
-      ctx.strokeStyle = base;
-      ctx.lineWidth = Math.max(1, s.r * (0.9 + warp*0.8));
-      ctx.beginPath();
-      ctx.moveTo(px, py);
-      ctx.lineTo(px + ux*streak, py + uy*streak);
-      ctx.stroke();
-
-      // маленькая яркая точка
-      ctx.fillStyle = `rgba(255,255,255,${Math.min(1, alpha*1.2)})`;
-      ctx.beginPath();
-      ctx.arc(px, py, s.r*0.9, 0, Math.PI*2);
-      ctx.fill();
-    } else {
-      // спокойный режим: точки + очень мягкий glow
-      ctx.fillStyle = base;
-      ctx.beginPath();
-      ctx.arc(px, py, s.r*0.7, 0, Math.PI*2);
-      ctx.fill();
-
-      ctx.fillStyle = open
-        ? `rgba(88,242,255,${alpha*0.10})`
-        : `rgba(255,90,110,${alpha*0.08})`;
-      ctx.beginPath();
-      ctx.arc(px, py, s.r*2.6, 0, Math.PI*2);
-      ctx.fill();
-    }
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r*2.8, 0, Math.PI*2);
+    ctx.fill();
   }
 }
 
-/* ========= Переход OPEN -> ROOM (Star Wars jump) ========= */
+/* ===== Альтернативный переход (без гиперстримов) =====
+   Идея: “белая вспышка + лёгкий зум + fade”, а звёзды чуть ускоряются
+*/
 let jumping = false;
-
 statusEl.addEventListener('click', () => {
   if (!lastState?.isOpen || jumping) return;
 
   jumping = true;
   document.body.classList.add('jumping');
 
-  // форсируем эффект “улёт”
+  // форсируем короткое ускорение звёзд (но без туннеля)
   hoveringOpen = true;
   hold = 1.6;
   warp = 1;
-
   setVars();
 
-  // через 720мс — в комнату
   setTimeout(() => {
     location.href = '/room.html';
-  }, 720);
+  }, 520);
 });
 
-/* ========= main loop ========= */
 function frame(ts){
   const dt = Math.min(0.05, (ts - lastTs)/1000);
   lastTs = ts;
@@ -276,22 +231,20 @@ function frame(ts){
   const open = !!lastState?.isOpen;
   const engaged = open && hoveringOpen;
 
-  // hold только когда держим OPEN
   if (engaged) hold = clamp(hold + dt*0.95, 0, 1.6);
   else hold = clamp(hold - dt*1.35, 0, 1.6);
 
   const t = smoothstep(hold/1.6);
-  const targetWarp = open ? (engaged ? clamp(0.10 + 0.90*t, 0, 1) : 0) : 0;
+  const targetWarp = open ? (engaged ? clamp(0.08 + 0.75*t, 0, 1) : 0) : 0;
   warp += (targetWarp - warp) * 0.07;
 
-  // если не engaged — наклон возвращаем к 0, чтобы не “жило” без OPEN (п.3)
   if (!engaged){
     tiltX *= 0.85;
     tiltY *= 0.85;
   }
 
   setVars();
-  drawStars(dt);
+  drawStars(ts, dt);
 
   requestAnimationFrame(frame);
 }
