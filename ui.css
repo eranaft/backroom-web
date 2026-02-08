@@ -612,3 +612,20 @@ body{
   .miniRight{ display:none; }
   .title{ font-size:42px; }
 }
+/* --- FIX: scroll inside pages --- */
+.stage{
+  min-height: 0;
+}
+
+.page{
+  overflow: auto;                    /* скролл внутри страницы */
+  -webkit-overflow-scrolling: touch; /* iOS плавный скролл */
+  scrollbar-gutter: stable both-edges; /* чтобы центр не прыгал из-за скроллбара */
+  padding: 0 0 10px;
+}
+
+/* чтобы карточка всегда была по центру по X и не "плясала" */
+.card{
+  margin: 0 auto;
+}
+
