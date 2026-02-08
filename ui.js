@@ -1,5 +1,5 @@
 /* =========================
-   i18n (RU now, EN ready)
+   i18n
 ========================= */
 const DICT = {
   ru: {
@@ -70,8 +70,6 @@ const t = (k) => (DICT[LANG] && DICT[LANG][k]) || (DICT.ru[k] || k);
 function applyI18n(){
   document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = t(el.dataset.i18n));
   document.querySelectorAll("[data-i18n-ph]").forEach(el => el.setAttribute("placeholder", t(el.dataset.i18nPh)));
-
-  // multiline
   document.querySelectorAll("[data-i18n='welcome_sub'],[data-i18n='game_sub']").forEach(el=>{
     el.innerHTML = t(el.dataset.i18n).replace(/\n/g, "<br/>");
   });
@@ -82,29 +80,8 @@ applyI18n();
    Router (swipe-like)
 ========================= */
 const tabs = [...document.querySelectorAll(".tab")];
-// --- Smooth tab indicator ---
-const tabsWrap = document.querySelector(".tabs");
-const indicator = document.createElement("span");
-indicator.className = "tabIndicator";
-tabsWrap.appendChild(indicator);
-
-function moveIndicatorToActive(){
-  const active = tabs.find(t => t.classList.contains("active")) || tabs[0];
-  if (!active) return;
-
-  const wrapRect = tabsWrap.getBoundingClientRect();
-  const r = active.getBoundingClientRect();
-
-  const left = r.left - wrapRect.left;
-  indicator.style.width = `${r.width}px`;
-  indicator.style.transform = `translateX(${left}px)`;
-}
-
-// вызвать один раз
-window.addEventListener("load", () => requestAnimationFrame(moveIndicatorToActive));
-window.addEventListener("resize", () => requestAnimationFrame(moveIndicatorToActive));
-
 const pages = [...document.querySelectorAll(".page")];
+const tabsWrap = document.querySelector(".tabs");
 const stage = document.getElementById("stage");
 
 const ORDER = ["home","library","player","game"];
@@ -113,8 +90,7 @@ let transitioning = false;
 
 function setActiveTab(route){
   tabs.forEach(b => b.classList.toggle("active", b.dataset.route === route));
-   requestAnimationFrame(moveIndicatorToActive);
-
+  requestAnimationFrame(moveIndicatorToActive);
 }
 
 function showPage(route, dir=0){
@@ -127,53 +103,59 @@ function showPage(route, dir=0){
 
   transitioning = true;
 
-  // direction classes for swipe feel
+  // direction classes
   next.classList.remove("from-left","from-right");
   if (dir < 0) next.classList.add("from-left");
   if (dir > 0) next.classList.add("from-right");
 
-  // accelerate stars only
+  // stars acceleration only
   warpTarget = 1;
   warpHold = Math.min(1.2, warpHold + 0.2);
 
-  // switch active
   if (cur) cur.classList.remove("active");
   next.classList.add("active");
-// FIX: после кадра убираем направляющие классы,
-// чтобы активная страница не "залипала" со смещением
-requestAnimationFrame(() => {
-  next.classList.remove("from-left", "from-right");
-});
+
+  // FIX: remove direction classes after start
+  requestAnimationFrame(() => {
+    next.classList.remove("from-left","from-right");
+  });
+
   currentRoute = route;
   setActiveTab(route);
   history.replaceState(null, "", `#${route}`);
 
-setTimeout(() => {
-  warpTarget = 0;
-  next.classList.remove("from-left", "from-right");
-  transitioning = false;
-}, 560)
+  setTimeout(() => {
+    warpTarget = 0;
+    next.classList.remove("from-left","from-right");
+    transitioning = false;
+  }, 560);
+}
 
+/* click tabs */
 tabs.forEach(b => b.addEventListener("click", () => {
   const to = b.dataset.route;
   const dir = Math.sign(ORDER.indexOf(to) - ORDER.indexOf(currentRoute));
   showPage(to, dir);
 }));
+
+/* click buttons */
 document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => {
   const to = b.dataset.go;
   const dir = Math.sign(ORDER.indexOf(to) - ORDER.indexOf(currentRoute));
   showPage(to, dir);
 }));
 
+/* init route */
 window.addEventListener("load", () => {
   const raw = (location.hash || "#home").replace(/^#/, "");
   const route = raw.includes("=") ? "home" : raw;
   currentRoute = ORDER.includes(route) ? route : "home";
   pages.forEach(p => p.classList.toggle("active", p.dataset.page === currentRoute));
   setActiveTab(currentRoute);
+  requestAnimationFrame(moveIndicatorToActive);
 });
 
-/* swipe left/right on mobile */
+/* swipe on stage */
 let sx=0, sy=0, swiping=false;
 stage.addEventListener("touchstart", (e)=>{
   const t0 = e.touches?.[0];
@@ -190,6 +172,7 @@ stage.addEventListener("touchend", (e)=>{
   const dx = t0.clientX - sx;
   const dy = t0.clientY - sy;
 
+  // only horizontal swipe
   if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy)*1.4){
     const i = ORDER.indexOf(currentRoute);
     const ni = dx < 0 ? Math.min(ORDER.length-1, i+1) : Math.max(0, i-1);
@@ -199,11 +182,34 @@ stage.addEventListener("touchend", (e)=>{
 },{passive:true});
 
 /* =========================
-   “Живой” UI (reactive)
-   - parallax affects bg + glass
+   Tab indicator (smooth slide)
+========================= */
+let indicator = null;
+if (tabsWrap){
+  indicator = document.createElement("span");
+  indicator.className = "tabIndicator";
+  tabsWrap.appendChild(indicator);
+}
+
+function moveIndicatorToActive(){
+  if (!indicator || !tabsWrap) return;
+  const active = tabs.find(t => t.classList.contains("active")) || tabs[0];
+  if (!active) return;
+
+  const wrapRect = tabsWrap.getBoundingClientRect();
+  const r = active.getBoundingClientRect();
+
+  const left = r.left - wrapRect.left;
+  indicator.style.width = `${r.width}px`;
+  indicator.style.transform = `translateX(${left}px)`;
+}
+
+window.addEventListener("resize", () => requestAnimationFrame(moveIndicatorToActive));
+
+/* =========================
+   Live parallax (reactive)
 ========================= */
 let tx=0, ty=0, cx=0, cy=0;
-
 function setTargetFromXY(x,y){
   const nx = (x / window.innerWidth) * 2 - 1;
   const ny = (y / window.innerHeight) * 2 - 1;
@@ -226,7 +232,7 @@ function rafPar(){
 requestAnimationFrame(rafPar);
 
 /* =========================
-   Stars (calm + warp accel)
+   Stars
 ========================= */
 const canvas = document.getElementById("stars");
 const ctx = canvas.getContext("2d", { alpha:true });
@@ -266,12 +272,9 @@ function drawStars(ts){
   if (warpTarget > 0.02) warpHold = Math.min(1.25, warpHold + 0.03);
   else warpHold = Math.max(0, warpHold - 0.05);
 
-  const warpMix = warpHold * warp; // 0..~1.25
-  document.documentElement.style.setProperty("--warp", warpMix.toFixed(3));
+  const speed = 1.0 + (warpHold*warp) * 3.0;
 
   ctx.clearRect(0,0,W,H);
-
-  const speed = 1.0 + warpMix * 3.0;
 
   for (const s of stars){
     s.x += s.vx * speed;
@@ -301,7 +304,26 @@ function drawStars(ts){
 requestAnimationFrame(drawStars);
 
 /* =========================
-   Global audio (no UI jump)
+   API state badge
+========================= */
+const windowBadge = document.getElementById("windowBadge");
+function apiBase(){ return (window.API_BASE || "").trim().replace(/\/+$/, ""); }
+async function fetchState(){
+  const r = await fetch(`${apiBase()}/state`, { cache:"no-store" });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+async function poll(){
+  try{
+    const st = await fetchState();
+    windowBadge.textContent = `window: ${st.windowId}`;
+  }catch{}
+}
+setInterval(poll, 2000);
+poll();
+
+/* =========================
+   Audio (demo)
 ========================= */
 const audio = document.getElementById("audio");
 const mName = document.getElementById("mName");
@@ -318,24 +340,7 @@ const pDesc = document.getElementById("pDesc");
 const chaptersEl = document.getElementById("chapters");
 const yandexBtn = document.getElementById("yandexBtn");
 const spotifyBtn = document.getElementById("spotifyBtn");
-const windowBadge = document.getElementById("windowBadge");
 
-function apiBase(){ return (window.API_BASE || "").trim().replace(/\/+$/, ""); }
-async function fetchState(){
-  const r = await fetch(`${apiBase()}/state`, { cache:"no-store" });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
-}
-async function poll(){
-  try{
-    const st = await fetchState();
-    windowBadge.textContent = `window: ${st.windowId}`;
-  }catch{}
-}
-setInterval(poll, 2000);
-poll();
-
-// demo tracks (replace later)
 const TRACKS = [
   {
     id:"t1",
@@ -369,6 +374,16 @@ const TRACKS = [
 let filtered = [...TRACKS];
 let idx = -1;
 
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+}
+function openLink(url){
+  if (!url) return;
+  window.open(url, "_blank", "noreferrer");
+}
+
 function renderList(){
   if (!listEl) return;
   listEl.innerHTML = "";
@@ -391,18 +406,6 @@ function renderList(){
     row.querySelector('[data-act="s"]').onclick = () => openLink(tk.spotify);
     listEl.appendChild(row);
   });
-
-  if (filtered.length === 0){
-    const empty = document.createElement("div");
-    empty.className = "item glass";
-    empty.textContent = LANG === "en" ? "Nothing found." : "Ничего не найдено.";
-    listEl.appendChild(empty);
-  }
-}
-
-function openLink(url){
-  if (!url) return;
-  window.open(url, "_blank", "noreferrer");
 }
 
 function playTrackById(id){
@@ -467,10 +470,5 @@ if (searchEl){
     renderList();
   });
 }
-renderList();
 
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, m => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-  }[m]));
-}
+renderList();
