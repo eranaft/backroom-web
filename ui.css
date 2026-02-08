@@ -1,0 +1,275 @@
+:root{
+  --bg: #05060a;
+
+  /* neon ядро */
+  --n1: rgba(88,242,255,.85);
+  --n2: rgba(179,93,255,.82);
+  --n3: rgba(255,71,154,.72);
+
+  --txt: rgba(255,255,255,.88);
+  --muted: rgba(255,255,255,.44);
+
+  --glass: rgba(10,12,18,.42);
+  --glass2: rgba(10,12,18,.26);
+  --stroke: rgba(255,255,255,.07);
+
+  --parX: 0px;
+  --parY: 0px;
+}
+
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  background: var(--bg);
+  color: var(--txt);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  letter-spacing: .06em;
+  overflow:hidden;
+}
+
+/* ===== пространство: темно + неон “дышит” по краям ===== */
+.bg{
+  position:fixed;
+  inset:-35%;
+  pointer-events:none;
+  background:
+    radial-gradient(900px 700px at 18% 18%, rgba(88,242,255,.10), transparent 62%),
+    radial-gradient(980px 760px at 82% 26%, rgba(179,93,255,.10), transparent 64%),
+    radial-gradient(980px 900px at 54% 86%, rgba(255,71,154,.07), transparent 66%),
+    linear-gradient(180deg, rgba(0,0,0,.14), rgba(0,0,0,.90));
+  filter: blur(22px) saturate(145%);
+  transform: translate3d(calc(var(--parX)*.25), calc(var(--parY)*.25), 0);
+  transition: transform .18s ease-out;
+  opacity:.95;
+}
+
+/* очень тонкая сетка, почти невидимая */
+.grid{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size: 84px 84px;
+  opacity:.07;
+  mask-image: radial-gradient(circle at 50% 30%, rgba(0,0,0,.95), transparent 74%);
+  transform: translate3d(calc(var(--parX)*.18), calc(var(--parY)*.18), 0);
+  transition: transform .18s ease-out;
+}
+
+/* ===== micro neon stroke (главная фишка) ===== */
+.neonStroke{
+  position:relative;
+  border-radius: 22px;
+  background: linear-gradient(180deg, var(--glass), var(--glass2));
+  border: 1px solid var(--stroke);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 60px rgba(0,0,0,.55);
+  overflow:hidden;
+}
+
+/* микрообводка градиентом по краю */
+.neonStroke::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  padding:1px;                 /* толщина “микрообводки” */
+  border-radius: 22px;
+  background: linear-gradient(120deg, var(--n1), var(--n2), var(--n3), var(--n1));
+  background-size: 240% 240%;
+  opacity:.65;
+  filter: blur(.0px);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: edgeFlow 18s ease-in-out infinite;
+  pointer-events:none;
+}
+
+@keyframes edgeFlow{
+  0%{ background-position: 0% 50%; }
+  50%{ background-position: 100% 50%; }
+  100%{ background-position: 0% 50%; }
+}
+
+/* мягкое внешнее свечение */
+.neonStroke::after{
+  content:"";
+  position:absolute;
+  inset:-35%;
+  background:
+    radial-gradient(600px 260px at 25% 25%, rgba(88,242,255,.14), transparent 60%),
+    radial-gradient(600px 260px at 75% 28%, rgba(179,93,255,.12), transparent 62%),
+    radial-gradient(650px 320px at 55% 85%, rgba(255,71,154,.10), transparent 62%);
+  filter: blur(22px);
+  opacity:.35;
+  pointer-events:none;
+}
+
+/* ===== layout shell ===== */
+.shell{
+  position:relative;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  padding: 18px;
+  gap: 14px;
+}
+
+.top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 10px 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.06);
+  background: rgba(0,0,0,.18);
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:250;
+  text-transform:uppercase;
+  font-size:12px;
+  letter-spacing:.18em;
+  color: rgba(255,255,255,.72);
+}
+.dot{
+  width:8px;height:8px;border-radius:50%;
+  background: rgba(88,242,255,.85);
+  box-shadow: 0 0 16px rgba(88,242,255,.22);
+}
+
+.actions{
+  display:flex;
+  gap:10px;
+}
+.a{
+  height:34px;
+  padding: 0 12px;
+  border-radius: 14px;
+  border:1px solid rgba(255,255,255,.08);
+  background: rgba(0,0,0,.18);
+  color: rgba(255,255,255,.70);
+  font-weight:300;
+  cursor:pointer;
+  text-decoration:none;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.a:hover{
+  border-color: rgba(255,255,255,.14);
+}
+
+/* ===== hero ===== */
+.center{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:0;
+}
+
+.hero{
+  width:min(860px, 94vw);
+  padding: 28px;
+}
+
+.kicker{
+  font-size:11px;
+  letter-spacing:.22em;
+  color: rgba(255,255,255,.42);
+  text-transform:uppercase;
+}
+
+.title{
+  margin-top:10px;
+  font-size:48px;
+  font-weight:220;
+  letter-spacing:.04em;
+}
+
+.subtitle{
+  margin-top:10px;
+  color: rgba(255,255,255,.46);
+  font-weight:300;
+  line-height:1.6;
+  max-width: 54ch;
+}
+
+/* мягкий градиент в тексте (не вырвиглаз) */
+.softNeonText{
+  background: linear-gradient(90deg,
+    rgba(255,255,255,.96),
+    rgba(190,235,255,.90),
+    rgba(255,215,245,.88),
+    rgba(255,255,255,.96)
+  );
+  background-size: 240% 100%;
+  -webkit-background-clip:text;
+  background-clip:text;
+  color: transparent;
+  animation: textFlow 22s ease-in-out infinite;
+  text-shadow:
+    0 0 10px rgba(255,255,255,.10),
+    0 0 26px rgba(88,242,255,.10),
+    0 0 40px rgba(179,93,255,.08);
+}
+@keyframes textFlow{
+  0%{ background-position: 0% 50%; }
+  50%{ background-position: 100% 50%; }
+  100%{ background-position: 0% 50%; }
+}
+
+.row{
+  margin-top:22px;
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.btn{
+  height:40px;
+  padding: 0 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.18);
+  color: rgba(255,255,255,.80);
+  font-weight:300;
+  cursor:pointer;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+.btn.primary{
+  border-color: rgba(88,242,255,.22);
+  box-shadow: 0 0 20px rgba(88,242,255,.10);
+}
+.btn:hover{
+  border-color: rgba(255,255,255,.16);
+}
+
+/* ===== page transitions ===== */
+.page{
+  opacity:1;
+  transform: translateY(0);
+  transition: opacity .35s ease, transform .35s ease, filter .35s ease;
+  filter: blur(0px);
+}
+.page.out{
+  opacity:0;
+  transform: translateY(10px);
+  filter: blur(8px);
+}
+
+/* mobile */
+@media (pointer: coarse){
+  .title{ font-size: 40px; }
+  .hero{ padding: 22px; }
+}
