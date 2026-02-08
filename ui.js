@@ -1,83 +1,209 @@
 /* =========================
    Helpers
 ========================= */
-function apiBase(){ return (window.API_BASE || "").trim().replace(/\/+$/, ""); }
-function $(id){ return document.getElementById(id); }
+function qs(sel, root=document){ return root.querySelector(sel); }
+function qsa(sel, root=document){ return [...root.querySelectorAll(sel)]; }
 
-function openExternal(url){
-  if (!url) return;
-  window.open(url, "_blank", "noreferrer");
+function apiBase(){ return (window.API_BASE || "").trim().replace(/\/+$/, ""); }
+async function fetchState(){
+  const r = await fetch(`${apiBase()}/state`, { cache:"no-store" });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
 }
 
 /* =========================
-   Stars (canvas)
+   Nav / Pages
 ========================= */
-const starsCanvas = $("stars");
-const sctx = starsCanvas?.getContext?.("2d", { alpha:true });
+const ORDER = ["home","library","player","game"];
+const pages = qsa(".page");
+const navItems = qsa(".navItem");
+const stage = qs("#stage");
 
-let SW=0, SH=0, DPR=1;
-let stars = [];
-let warp = 0, warpTarget = 0, warpHold = 0;
+let route = "home";
+let transitioning = false;
 
-function resizeStars(){
-  if (!starsCanvas || !sctx) return;
-  DPR = Math.min(2, window.devicePixelRatio || 1);
-  SW = Math.floor(window.innerWidth);
-  SH = Math.floor(window.innerHeight);
-  starsCanvas.width  = Math.floor(SW * DPR);
-  starsCanvas.height = Math.floor(SH * DPR);
-  starsCanvas.style.width  = SW + "px";
-  starsCanvas.style.height = SH + "px";
-  sctx.setTransform(DPR,0,0,DPR,0,0);
-
-  const count = Math.floor((SW * SH) / 10500);
-  stars = new Array(count).fill(0).map(() => ({
-    x: Math.random()*SW,
-    y: Math.random()*SH,
-    r: 0.6 + Math.random()*1.9,
-    a: 0.06 + Math.random()*0.44,
-    vx: 0.08 + Math.random()*0.16,
-    vy: -0.04 + Math.random()*0.14,
-    tw: 0.35 + Math.random()*1.2,
-    ph: Math.random()*Math.PI*2
-  }));
+function setActive(routeNext){
+  navItems.forEach(b=>{
+    const active = b.dataset.route === routeNext;
+    b.classList.toggle("isActive", active);
+    // для “обводки” через ::after нужно data-label
+    b.dataset.label = b.textContent.trim();
+    b.setAttribute("aria-current", active ? "page" : "false");
+  });
 }
-window.addEventListener("resize", resizeStars);
-resizeStars();
+
+function show(routeNext){
+  if (transitioning) return;
+  if (!ORDER.includes(routeNext)) return;
+  if (routeNext === route) return;
+
+  const cur = pages.find(p=>p.dataset.page === route);
+  const nxt = pages.find(p=>p.dataset.page === routeNext);
+  if (!nxt) return;
+
+  transitioning = true;
+
+  // плавный уход текущей
+  if (cur){
+    cur.classList.remove("isActive");
+  }
+
+  // небольшая задержка для “живого” blur/fade
+  requestAnimationFrame(()=>{
+    nxt.classList.add("isActive");
+    route = routeNext;
+    setActive(routeNext);
+
+    history.replaceState(null, "", `#${routeNext}`);
+    setTimeout(()=>{ transitioning = false; }, 520);
+  });
+}
+
+navItems.forEach(b=>{
+  b.addEventListener("click", ()=> show(b.dataset.route));
+});
+
+qsa("[data-go]").forEach(b=>{
+  b.addEventListener("click", ()=> show(b.dataset.go));
+});
+
+/* swipe left-right */
+let sx=0, sy=0, sw=false;
+stage.addEventListener("touchstart", (e)=>{
+  const t0 = e.touches?.[0];
+  if (!t0) return;
+  sx = t0.clientX; sy = t0.clientY; sw = true;
+},{passive:true});
+
+stage.addEventListener("touchend", (e)=>{
+  if (!sw) return;
+  sw = false;
+  const t0 = e.changedTouches?.[0];
+  if (!t0) return;
+  const dx = t0.clientX - sx;
+  const dy = t0.clientY - sy;
+  if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy)*1.4){
+    const i = ORDER.indexOf(route);
+    const ni = dx < 0 ? Math.min(ORDER.length-1, i+1) : Math.max(0, i-1);
+    show(ORDER[ni]);
+  }
+},{passive:true});
+
+/* init from hash */
+window.addEventListener("load", ()=>{
+  const raw = (location.hash || "#home").replace(/^#/, "");
+  route = ORDER.includes(raw) ? raw : "home";
+  pages.forEach(p=> p.classList.toggle("isActive", p.dataset.page === route));
+  setActive(route);
+});
+
+/* =========================
+   Exit (Telegram friendly)
+========================= */
+const exitBtn = qs("#exitBtn");
+if (exitBtn){
+  exitBtn.addEventListener("click", ()=>{
+    // если это Telegram WebApp — закрываем мини-апп
+    if (window.Telegram?.WebApp){
+      window.Telegram.WebApp.close();
+      return;
+    }
+    // иначе просто назад
+    history.back();
+  });
+}
+
+/* =========================
+   Live parallax
+========================= */
+let tx=0, ty=0, cx=0, cy=0;
+function setTargetFromXY(x,y){
+  const nx = (x / window.innerWidth) * 2 - 1;
+  const ny = (y / window.innerHeight) * 2 - 1;
+  tx = nx * 18;
+  ty = ny * 14;
+}
+window.addEventListener("mousemove", e => setTargetFromXY(e.clientX, e.clientY), { passive:true });
+window.addEventListener("touchmove", e => {
+  const t0 = e.touches?.[0];
+  if (t0) setTargetFromXY(t0.clientX, t0.clientY);
+}, { passive:true });
+
+(function rafPar(){
+  cx += (tx - cx) * 0.07;
+  cy += (ty - cy) * 0.07;
+  document.documentElement.style.setProperty("--parX", `${cx.toFixed(2)}px`);
+  document.documentElement.style.setProperty("--parY", `${cy.toFixed(2)}px`);
+  requestAnimationFrame(rafPar);
+})();
+
+/* =========================
+   Stars (random, мягкое движение)
+========================= */
+const canvas = qs("#stars");
+const ctx = canvas.getContext("2d", { alpha:true });
+
+let W=0,H=0,DPR=1, stars=[];
+let warp=0, warpTarget=0;
+
+function resize(){
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = Math.floor(window.innerWidth);
+  H = Math.floor(window.innerHeight);
+  canvas.width = Math.floor(W * DPR);
+  canvas.height = Math.floor(H * DPR);
+  canvas.style.width = W + "px";
+  canvas.style.height = H + "px";
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+
+  const count = Math.floor((W*H)/9000);
+  stars = new Array(count).fill(0).map(() => {
+    const depth = Math.random(); // 0..1
+    return {
+      x: Math.random()*W,
+      y: Math.random()*H,
+      r: 0.4 + Math.random()*1.6,
+      a: 0.05 + Math.random()*0.35,
+      vx: (0.04 + Math.random()*0.12) * (0.35 + depth*1.25),
+      vy: (-0.05 + Math.random()*0.10) * (0.35 + depth*1.25),
+      tw: 0.35 + Math.random()*1.2,
+      ph: Math.random()*Math.PI*2,
+      d: depth
+    };
+  });
+}
+window.addEventListener("resize", resize);
+resize();
 
 function drawStars(ts){
-  if (!sctx) return;
+  // лёгкое ускорение в переходах (если захочешь потом — подключим к роутеру)
+  warp += (warpTarget - warp) * 0.08;
+  const speed = 1.0 + warp * 1.8;
 
-  warp += (warpTarget - warp) * 0.10;
-  if (warpTarget > 0.02) warpHold = Math.min(1.2, warpHold + 0.03);
-  else warpHold = Math.max(0, warpHold - 0.06);
-
-  const speed = 1.0 + (warpHold * warp) * 2.6;
-
-  sctx.clearRect(0,0,SW,SH);
+  ctx.clearRect(0,0,W,H);
 
   for (const s of stars){
     s.x += s.vx * speed;
     s.y += s.vy * speed;
 
-    if (s.x > SW+10) s.x = -10;
-    if (s.x < -10) s.x = SW+10;
-    if (s.y > SH+10) s.y = -10;
-    if (s.y < -10) s.y = SH+10;
+    if (s.x > W+12) s.x = -12;
+    if (s.x < -12) s.x = W+12;
+    if (s.y > H+12) s.y = -12;
+    if (s.y < -12) s.y = H+12;
 
     const tw = (Math.sin(ts*0.001*s.tw + s.ph)+1)*0.5;
-    const a = s.a * (0.58 + tw*0.42);
+    const a = s.a * (0.62 + tw*0.38);
 
-    sctx.fillStyle = `rgba(255,255,255,${a})`;
-    sctx.beginPath();
-    sctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
-    sctx.fill();
+    // белая точка + мягкий ореол (без “воды”)
+    ctx.fillStyle = `rgba(255,255,255,${a})`;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+    ctx.fill();
 
-    // subtle colored halo
-    sctx.fillStyle = `rgba(0,220,255,${a*0.05})`;
-    sctx.beginPath();
-    sctx.arc(s.x, s.y, s.r*2.7, 0, Math.PI*2);
-    sctx.fill();
+    ctx.fillStyle = `rgba(0,220,255,${a*0.05})`;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r*2.6, 0, Math.PI*2);
+    ctx.fill();
   }
 
   requestAnimationFrame(drawStars);
@@ -85,134 +211,9 @@ function drawStars(ts){
 requestAnimationFrame(drawStars);
 
 /* =========================
-   Parallax (mouse/touch)
+   API badge
 ========================= */
-let tx=0, ty=0, cx=0, cy=0;
-function setTarget(x,y){
-  const nx = (x / window.innerWidth) * 2 - 1;
-  const ny = (y / window.innerHeight) * 2 - 1;
-  tx = nx * 18;
-  ty = ny * 14;
-}
-window.addEventListener("mousemove", e => setTarget(e.clientX, e.clientY), { passive:true });
-window.addEventListener("touchmove", e => {
-  const t0 = e.touches?.[0];
-  if (t0) setTarget(t0.clientX, t0.clientY);
-}, { passive:true });
-
-(function parLoop(){
-  cx += (tx - cx) * 0.07;
-  cy += (ty - cy) * 0.07;
-  document.documentElement.style.setProperty("--parX", `${cx.toFixed(2)}px`);
-  document.documentElement.style.setProperty("--parY", `${cy.toFixed(2)}px`);
-  requestAnimationFrame(parLoop);
-})();
-
-/* =========================
-   Router (pages)
-========================= */
-const stage = $("stage");
-const navItems = [...document.querySelectorAll(".navItem")];
-const pages = [...document.querySelectorAll(".page")];
-const ORDER = ["library","player","game"];
-let route = "library";
-let transitioning = false;
-
-function setActive(routeName){
-  navItems.forEach(b => b.classList.toggle("isActive", b.dataset.route === routeName));
-  pages.forEach(p => p.classList.toggle("isActive", p.dataset.page === routeName));
-}
-
-function show(routeName){
-  if (transitioning) return;
-  if (!ORDER.includes(routeName)) return;
-  if (routeName === route) return;
-
-  transitioning = true;
-
-  const cur = pages.find(p => p.dataset.page === route);
-  const next = pages.find(p => p.dataset.page === routeName);
-
-  const dir = Math.sign(ORDER.indexOf(routeName) - ORDER.indexOf(route));
-
-  // prepare
-  next.classList.remove("fromLeft","fromRight");
-  if (dir < 0) next.classList.add("fromLeft");
-  if (dir > 0) next.classList.add("fromRight");
-
-  // hyperspace push (smooth)
-  warpTarget = 1;
-
-  // swap active
-  cur?.classList.remove("isActive");
-  next.classList.add("isActive");
-  navItems.forEach(b => b.classList.toggle("isActive", b.dataset.route === routeName));
-
-  // cleanup
-  requestAnimationFrame(() => next.classList.remove("fromLeft","fromRight"));
-
-  route = routeName;
-  history.replaceState(null, "", `#${routeName}`);
-
-  setTimeout(() => {
-    warpTarget = 0;
-    transitioning = false;
-  }, 520);
-}
-
-navItems.forEach(b => {
-  b.addEventListener("click", () => show(b.dataset.route));
-});
-
-window.addEventListener("load", () => {
-  const raw = (location.hash || "#library").replace(/^#/, "");
-  const initial = ORDER.includes(raw) ? raw : "library";
-  route = initial;
-  setActive(route);
-});
-
-/* swipe */
-if (stage){
-  let sx=0, sy=0, sw=false;
-  stage.addEventListener("touchstart", (e)=>{
-    const t0 = e.touches?.[0]; if(!t0) return;
-    sx = t0.clientX; sy = t0.clientY; sw = true;
-  }, {passive:true});
-
-  stage.addEventListener("touchend", (e)=>{
-    if(!sw) return; sw = false;
-    const t0 = e.changedTouches?.[0]; if(!t0) return;
-    const dx = t0.clientX - sx;
-    const dy = t0.clientY - sy;
-    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy)*1.3){
-      const i = ORDER.indexOf(route);
-      const ni = dx < 0 ? Math.min(ORDER.length-1, i+1) : Math.max(0, i-1);
-      show(ORDER[ni]);
-    }
-  }, {passive:true});
-}
-
-/* Exit: Telegram close if possible */
-const exitBtn = $("exitBtn");
-exitBtn?.addEventListener("click", () => {
-  const tg = window.Telegram?.WebApp;
-  if (tg?.close) tg.close();
-  else location.href = "/"; // fallback
-});
-
-/* =========================
-   API window badge
-========================= */
-const windowBadge = $("windowBadge");
-
-async function fetchState(){
-  const base = apiBase();
-  if (!base) throw new Error("no API_BASE");
-  const r = await fetch(`${base}/state`, { cache:"no-store" });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
-}
-
+const windowBadge = qs("#windowBadge");
 async function poll(){
   try{
     const st = await fetchState();
@@ -225,6 +226,28 @@ poll();
 /* =========================
    Tracks + Player
 ========================= */
+const audio = qs("#audio");
+
+const mName = qs("#mName");
+const mHint = qs("#mHint");
+const prevBtn = qs("#prev");
+const nextBtn = qs("#next");
+const toggleBtn = qs("#toggle");
+
+const listEl = qs("#list");
+const searchEl = qs("#search");
+
+const pTitle = qs("#pTitle");
+const pDesc = qs("#pDesc");
+const pArtist = qs("#pArtist");
+const chaptersEl = qs("#chapters");
+const yandexBtn = qs("#yandexBtn");
+const spotifyBtn = qs("#spotifyBtn");
+
+const scrub = qs("#scrub");
+const prog = qs("#prog");
+const knob = qs("#knob");
+
 const TRACKS = [
   {
     id:"t1",
@@ -255,170 +278,162 @@ const TRACKS = [
   },
 ];
 
-const listEl = $("list");
-const searchEl = $("search");
-
-const audio = $("audio");
-const mName = $("mName");
-const mHint = $("mHint");
-
-const prevBtn = $("prev");
-const nextBtn = $("next");
-const toggleBtn = $("toggle");
-
-const scrub = $("scrub");
-const prog = $("prog");
-const knob = $("knob");
-
-const pTitle = $("pTitle");
-const pHint = $("pHint");
-const pDesc = $("pDesc");
-const chaptersEl = $("chapters");
-const yandexBtn = $("yandexBtn");
-const spotifyBtn = $("spotifyBtn");
-
 let filtered = [...TRACKS];
 let idx = -1;
 
-/* render list */
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, m => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
   }[m]));
 }
+function openLink(url){
+  if (!url) return;
+  window.open(url, "_blank", "noreferrer");
+}
 
 function renderList(){
   if (!listEl) return;
   listEl.innerHTML = "";
-
   filtered.forEach(tk => {
     const row = document.createElement("div");
-    row.className = "item";
+    row.className = "item glassInner";
     row.innerHTML = `
       <div class="itemL">
         <div class="name">${escapeHtml(tk.title)}</div>
         <div class="hint">${escapeHtml(tk.hint || "")}</div>
       </div>
       <div class="itemR">
-        <button class="chip" data-act="y" type="button">YANDEX</button>
-        <button class="chip" data-act="s" type="button">SPOTIFY</button>
-        <button class="chip primary" data-act="p" type="button">PLAY</button>
+        <button class="smallBtn" data-act="y">Yandex</button>
+        <button class="smallBtn" data-act="s">Spotify</button>
+        <button class="smallBtn primary" data-act="p">Play</button>
       </div>
     `;
-    row.querySelector('[data-act="p"]').onclick = () => playById(tk.id);
-    row.querySelector('[data-act="y"]').onclick = () => openExternal(tk.yandex);
-    row.querySelector('[data-act="s"]').onclick = () => openExternal(tk.spotify);
+    row.querySelector('[data-act="p"]').onclick = () => playTrackById(tk.id, true);
+    row.querySelector('[data-act="y"]').onclick = () => openLink(tk.yandex);
+    row.querySelector('[data-act="s"]').onclick = () => openLink(tk.spotify);
     listEl.appendChild(row);
   });
 }
 
-function fillPlayerMeta(tk){
+function setMini(tk){
   if (mName) mName.textContent = tk?.title || "No track";
   if (mHint) mHint.textContent = tk?.hint || "—";
+}
+function setPlayerInfo(tk){
   if (pTitle) pTitle.textContent = tk?.title || "—";
-  if (pHint) pHint.textContent = tk?.hint ? tk.hint : "KRAMSKOY • BACKROOM";
+  if (pArtist) pArtist.textContent = "KRAMSKOY • BACKROOM";
   if (pDesc) pDesc.textContent = tk?.desc || "Выбери трек в библиотеке.";
 
   if (chaptersEl){
     chaptersEl.innerHTML = "";
-    (tk?.chapters || []).forEach(ch => {
+    (tk?.chapters || []).forEach(ch=>{
       const c = document.createElement("div");
       c.className = "chapter";
       c.innerHTML = `<div class="time">${ch.t}</div><div class="note">${escapeHtml(ch.note||"")}</div>`;
-      c.onclick = () => { if(!audio) return; audio.currentTime = ch.s; audio.play().catch(()=>{}); };
+      c.onclick = () => { audio.currentTime = ch.s; audio.play().catch(()=>{}); };
       chaptersEl.appendChild(c);
     });
   }
 
-  if (yandexBtn) yandexBtn.onclick = () => openExternal(tk?.yandex);
-  if (spotifyBtn) spotifyBtn.onclick = () => openExternal(tk?.spotify);
+  if (yandexBtn) yandexBtn.onclick = () => openLink(tk?.yandex);
+  if (spotifyBtn) spotifyBtn.onclick = () => openLink(tk?.spotify);
 }
 
-function playById(id){
-  if (!audio) return;
+function syncPlayUI(){
+  if (!toggleBtn) return;
+  if (audio.paused) toggleBtn.classList.remove("isPlaying");
+  else toggleBtn.classList.add("isPlaying");
+}
+
+function playTrackById(id, autostart=false){
   const i = TRACKS.findIndex(x => x.id === id);
   if (i === -1) return;
-
   idx = i;
   const tk = TRACKS[idx];
 
-  fillPlayerMeta(tk);
+  // не дергаем UI: сначала обновим тексты, потом play
+  setMini(tk);
+  setPlayerInfo(tk);
 
-  audio.src = tk.url;
-  audio.play().catch(()=>{});
+  if (audio.src !== location.origin + tk.url && audio.src !== tk.url){
+    audio.src = tk.url;
+  }
+
+  if (autostart){
+    audio.play().catch(()=>{});
+  }
   syncPlayUI();
-
-  // when start track, jump to player page? (optional: keep user where he is)
-  // show("player");
 }
 
 function prev(){
   if (!TRACKS.length) return;
   idx = (idx <= 0) ? TRACKS.length - 1 : idx - 1;
-  playById(TRACKS[idx].id);
+  playTrackById(TRACKS[idx].id, true);
 }
 function next(){
   if (!TRACKS.length) return;
   idx = (idx >= TRACKS.length - 1) ? 0 : idx + 1;
-  playById(TRACKS[idx].id);
+  playTrackById(TRACKS[idx].id, true);
 }
 
-prevBtn && (prevBtn.onclick = prev);
-nextBtn && (nextBtn.onclick = next);
+if (prevBtn) prevBtn.onclick = prev;
+if (nextBtn) nextBtn.onclick = next;
 
-function syncPlayUI(){
-  if (!toggleBtn || !audio) return;
-  toggleBtn.classList.toggle("isPlaying", !audio.paused);
+if (toggleBtn){
+  toggleBtn.onclick = () => {
+    if (!audio.src){
+      playTrackById(TRACKS[0].id, true);
+      return;
+    }
+    if (audio.paused) audio.play().catch(()=>{});
+    else audio.pause();
+    syncPlayUI();
+  };
 }
 
-toggleBtn?.addEventListener("click", () => {
-  if (!audio) return;
-  if (!audio.src){
-    playById(TRACKS[0].id);
-    return;
-  }
-  if (audio.paused) audio.play().catch(()=>{});
-  else audio.pause();
-  syncPlayUI();
-});
-audio?.addEventListener("play", syncPlayUI);
-audio?.addEventListener("pause", syncPlayUI);
+audio.addEventListener("play", syncPlayUI);
+audio.addEventListener("pause", syncPlayUI);
 
-/* scrub */
+/* Progress */
 function setProg(p){
-  if (!scrub || !prog || !knob) return;
   const clamped = Math.max(0, Math.min(1, p));
-  prog.style.width = `${clamped * 100}%`;
-  const r = scrub.getBoundingClientRect();
-  knob.style.left = `${r.width * clamped}px`;
+  if (prog) prog.style.width = `${clamped * 100}%`;
+
+  if (knob && scrub){
+    const r = scrub.getBoundingClientRect();
+    const usable = Math.max(0, (r.width - 160)); // не лезем на кнопки
+    const x = usable * clamped;
+    knob.style.left = `${x}px`;
+  }
 }
 
-audio?.addEventListener("loadedmetadata", () => setProg(0));
-audio?.addEventListener("timeupdate", () => {
+audio.addEventListener("loadedmetadata", () => setProg(0));
+audio.addEventListener("timeupdate", () => {
   if (!audio.duration) return;
   setProg(audio.currentTime / audio.duration);
 });
-audio?.addEventListener("ended", () => setProg(1));
+audio.addEventListener("ended", () => setProg(1));
 
-if (scrub && audio){
-  let dragging = false;
+let dragging = false;
+function seekFromClientX(clientX){
+  if (!scrub) return;
+  const r = scrub.getBoundingClientRect();
+  const usable = Math.max(0, (r.width - 160)); // зона до кнопок
+  const x = Math.max(0, Math.min(usable, clientX - r.left));
+  const p = usable ? (x / usable) : 0;
+  setProg(p);
+  if (audio.duration) audio.currentTime = p * audio.duration;
+}
 
-  function seekFromX(clientX){
-    const r = scrub.getBoundingClientRect();
-    const x = Math.max(0, Math.min(r.width, clientX - r.left));
-    const p = r.width ? x / r.width : 0;
-    setProg(p);
-    if (audio.duration) audio.currentTime = p * audio.duration;
-  }
-
+if (scrub){
   scrub.addEventListener("pointerdown", (e) => {
     dragging = true;
     scrub.setPointerCapture(e.pointerId);
-    seekFromX(e.clientX);
+    seekFromClientX(e.clientX);
   });
   scrub.addEventListener("pointermove", (e) => {
     if (!dragging) return;
-    seekFromX(e.clientX);
+    seekFromClientX(e.clientX);
   });
   scrub.addEventListener("pointerup", (e) => {
     dragging = false;
@@ -426,15 +441,17 @@ if (scrub && audio){
   });
 }
 
-/* search */
-searchEl?.addEventListener("input", () => {
-  const s = searchEl.value.trim().toLowerCase();
-  filtered = TRACKS.filter(tk =>
-    tk.title.toLowerCase().includes(s) || (tk.hint||"").toLowerCase().includes(s)
-  );
-  renderList();
-});
+/* Search */
+if (searchEl){
+  searchEl.addEventListener("input", () => {
+    const s = searchEl.value.trim().toLowerCase();
+    filtered = TRACKS.filter(tk =>
+      tk.title.toLowerCase().includes(s) || (tk.hint||"").toLowerCase().includes(s)
+    );
+    renderList();
+  });
+}
 
-/* init */
 renderList();
-fillPlayerMeta(null);
+setMini(null);
+setPlayerInfo(null);
