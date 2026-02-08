@@ -395,13 +395,21 @@ audio.addEventListener("play", syncPlayUI);
 audio.addEventListener("pause", syncPlayUI);
 
 /* Progress */
+function scrubRightPx(){
+  if (!scrub) return 160;
+  const v = getComputedStyle(scrub).getPropertyValue("--scrubRight").trim();
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : 160;
+}
+
 function setProg(p){
   const clamped = Math.max(0, Math.min(1, p));
   if (prog) prog.style.width = `${clamped * 100}%`;
 
   if (knob && scrub){
     const r = scrub.getBoundingClientRect();
-    const usable = Math.max(0, (r.width - 160)); // не лезем на кнопки
+    const safeRight = scrubRightPx();
+   const usable = Math.max(0, (r.width - safeRight));
     const x = usable * clamped;
     knob.style.left = `${x}px`;
   }
@@ -418,7 +426,8 @@ let dragging = false;
 function seekFromClientX(clientX){
   if (!scrub) return;
   const r = scrub.getBoundingClientRect();
-  const usable = Math.max(0, (r.width - 160)); // зона до кнопок
+  const safeRight = scrubRightPx();
+   const usable = Math.max(0, (r.width - safeRight));
   const x = Math.max(0, Math.min(usable, clientX - r.left));
   const p = usable ? (x / usable) : 0;
   setProg(p);
