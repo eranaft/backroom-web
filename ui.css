@@ -943,3 +943,175 @@ body{
   }
   .miniCtrls{ gap: 8px !important; }
 }
+
+/* =========================
+   SPACE NAV: pure text, one row, neon glow (no pills)
+========================= */
+
+/* общий “переливающийся неоновый свет” по всему экрану */
+.neonAura{
+  position: fixed;
+  inset: -35%;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(900px 560px at 18% 22%, rgba(0,220,255,.10), transparent 62%),
+    radial-gradient(900px 560px at 82% 26%, rgba(140,90,255,.10), transparent 62%),
+    radial-gradient(900px 560px at 62% 78%, rgba(255,80,160,.08), transparent 64%),
+    radial-gradient(900px 560px at 30% 84%, rgba(255,170,60,.06), transparent 66%),
+    radial-gradient(900px 560px at 52% 50%, rgba(40,255,160,.06), transparent 68%);
+  filter: blur(38px) saturate(160%);
+  opacity: .55;
+  mix-blend-mode: screen;
+  animation: neonAuraFlow 22s ease-in-out infinite;
+  transform: translate3d(calc(var(--parX)*.08), calc(var(--parY)*.08), 0) scale(1.03);
+}
+
+@keyframes neonAuraFlow{
+  0%   { opacity:.42; transform: translate3d(calc(var(--parX)*.08), calc(var(--parY)*.08), 0) scale(1.01); }
+  50%  { opacity:.68; transform: translate3d(calc(var(--parX)*.08), calc(var(--parY)*.08), 0) scale(1.06); }
+  100% { opacity:.42; transform: translate3d(calc(var(--parX)*.08), calc(var(--parY)*.08), 0) scale(1.01); }
+}
+
+/* HUD выше всего, чтобы аура была сзади */
+.shell, .hud, .stage, .mini{ position: relative; z-index: 2; }
+
+/* делаем верх компактнее */
+.hud{
+  margin-top: 8px !important;
+  gap: 8px !important;
+}
+
+/* tabs: один ряд, без фона/обводки */
+.tabs{
+  position: relative !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 26px !important;
+
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+
+  max-width: min(1120px, 96vw);
+  overflow: hidden;
+}
+
+/* убираем индикатор-пилюлю полностью */
+.tabIndicator{ display: none !important; }
+
+/* tab как “живой текст” */
+.tab{
+  all: unset;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+
+  font-weight: 260;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  font-size: 12px;
+
+  color: rgba(255,255,255,.52);
+  opacity: .92;
+
+  transition:
+    opacity .22s ease,
+    transform .22s ease,
+    filter .22s ease,
+    text-shadow .22s ease;
+}
+
+/* лёгкая “неоновая пыль” у неактивных */
+.tab{
+  text-shadow:
+    0 0 10px rgba(0,220,255,.06),
+    0 0 14px rgba(140,90,255,.04);
+}
+
+/* hover — чуть живее, но без пилюль */
+.tab:hover{
+  opacity: .98;
+  transform: translateY(-1px);
+  color: rgba(255,255,255,.72);
+  text-shadow:
+    0 0 12px rgba(0,220,255,.10),
+    0 0 18px rgba(140,90,255,.08),
+    0 0 26px rgba(255,80,160,.06);
+}
+
+/* ACTIVE: ярче + перелив + тонкая линия снизу */
+.tab.active{
+  color: rgba(255,255,255,.92);
+  opacity: 1;
+  background: linear-gradient(120deg, var(--c1), var(--c2), var(--c3), var(--c4), var(--c5), var(--c1));
+  background-size: 320% 320%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: navGlow 14s ease-in-out infinite;
+
+  text-shadow:
+    0 0 14px rgba(0,220,255,.16),
+    0 0 24px rgba(140,90,255,.12),
+    0 0 34px rgba(255,80,160,.10);
+}
+
+@keyframes navGlow{
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.tab.active::after{
+  content:"";
+  position:absolute;
+  left:-6px;
+  right:-6px;
+  bottom:-10px;
+  height:2px;
+  border-radius:999px;
+  background: linear-gradient(90deg, var(--c1), var(--c2), var(--c3), var(--c4), var(--c5));
+  opacity: .85;
+  box-shadow:
+    0 0 12px rgba(0,220,255,.14),
+    0 0 22px rgba(140,90,255,.10);
+}
+
+/* EXIT: делаем кнопкой-иконкой справа от табов */
+.exitBtn{
+  all: unset;
+  cursor: pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  width: 36px;
+  height: 36px;
+
+  opacity: .78;
+  transition: transform .18s ease, opacity .18s ease, filter .18s ease;
+}
+
+.exitBtn:hover{
+  opacity: 1;
+  transform: translateY(-1px);
+  filter: drop-shadow(0 0 10px rgba(0,220,255,.14)) drop-shadow(0 0 16px rgba(140,90,255,.10));
+}
+
+.exitBtn svg{
+  width: 18px;
+  height: 18px;
+  fill: rgba(255,255,255,.78);
+}
+
+/* мобилка: уменьшаем gap, чтобы всё влезло в один ряд */
+@media (max-width: 520px){
+  .tabs{ gap: 14px !important; }
+  .tab{ font-size: 11px; letter-spacing: .18em; }
+  .exitBtn{ width: 34px; height: 34px; }
+}
