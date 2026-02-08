@@ -738,3 +738,47 @@ body{
   50%{ background-position: 100% 50%; }
   100%{ background-position: 0% 50%; }
 }
+
+/* ===== ACTIVE NAV: обводка/свечение без заливки ===== */
+.navItem{
+  text-shadow: none;
+}
+
+.navItem.isActive{
+  color: rgba(255,255,255,.78);
+}
+
+/* “обводка” + живой перелив свечения */
+.navItem.isActive::after{
+  content: attr(data-label);
+  position:absolute;
+  inset:0;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255,255,255,.10);
+
+  /* свечение неона */
+  text-shadow:
+    0 0 10px rgba(0,220,255,.20),
+    0 0 18px rgba(140,90,255,.14),
+    0 0 26px rgba(255,80,160,.10);
+
+  /* “живость” — мягко переливается */
+  animation: navNeonPulse 3.2s ease-in-out infinite;
+  pointer-events:none;
+}
+
+@keyframes navNeonPulse{
+  0%{
+    filter: hue-rotate(0deg);
+    opacity:.85;
+  }
+  50%{
+    filter: hue-rotate(18deg);
+    opacity:1;
+  }
+  100%{
+    filter: hue-rotate(0deg);
+    opacity:.85;
+  }
+}
+
