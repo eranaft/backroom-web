@@ -3,42 +3,142 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>BACKROOM — Home</title>
+  <title>BACKROOM</title>
   <link rel="stylesheet" href="/ui.css" />
 </head>
+
 <body>
+  <!-- space -->
   <div class="bg"></div>
   <div class="grid"></div>
+  <canvas id="stars"></canvas>
 
-  <div class="shell page">
-    <div class="top">
-      <div class="brand"><span class="dot"></span><span>BACKROOM</span></div>
+  <div class="shell" id="shell">
+    <!-- top nav -->
+    <header class="top neonTile">
+      <div class="brand">
+        <span class="dot"></span>
+        <span>BACKROOM</span>
+      </div>
+
+      <nav class="tabs" aria-label="Navigation">
+        <button class="tab active" data-route="home">Home</button>
+        <button class="tab" data-route="library">Library</button>
+        <button class="tab" data-route="player">Player</button>
+        <button class="tab" data-route="game">Game</button>
+      </nav>
+
       <div class="actions">
         <a class="a" href="/index.html">EXIT</a>
       </div>
-    </div>
+    </header>
 
-    <div class="center">
-      <section class="hero neonStroke">
-        <div class="kicker">WELCOME</div>
-        <div class="title softNeonText">KRAMSKOY</div>
-        <div class="subtitle">
-          Ночная комната. Минимализм. Ядерный неон — только на гранях.
-          <br/>Нажми <b>ENTER</b>, чтобы открыть библиотеку.
-        </div>
+    <!-- pages (virtual) -->
+    <main class="stage" id="stage">
+      <!-- HOME -->
+      <section class="page active" data-page="home">
+        <div class="card neonTile reflect">
+          <div class="kicker">WELCOME</div>
+          <div class="title softNeonText">KRAMSKOY</div>
+          <div class="subtitle">
+            Ночная комната. Тёмно. Живой неон по граням.
+            <br/>Здесь ты слушаешь и “заходишь в окна”.
+          </div>
 
-        <div class="row">
-          <button class="btn primary" id="enterBtn">ENTER</button>
-          <button class="btn" id="libBtn">LIBRARY</button>
+          <div class="row">
+            <button class="btn primary" data-go="library">ENTER</button>
+            <button class="btn" data-go="player">OPEN PLAYER</button>
+          </div>
         </div>
       </section>
-    </div>
+
+      <!-- LIBRARY -->
+      <section class="page" data-page="library">
+        <div class="card neonTile reflect wide">
+          <div class="headRow">
+            <div>
+              <div class="kicker">CASSETTES</div>
+              <div class="title2">Library</div>
+            </div>
+            <input class="search" id="search" placeholder="Поиск…" />
+          </div>
+
+          <div class="list" id="list"></div>
+        </div>
+      </section>
+
+      <!-- PLAYER -->
+      <section class="page" data-page="player">
+        <div class="card neonTile reflect wide">
+          <div class="headRow">
+            <div>
+              <div class="kicker">NOW</div>
+              <div class="title2" id="pTitle">—</div>
+              <div class="subtitle2" id="pSub">KRAMSKOY • BACKROOM</div>
+            </div>
+            <div class="badge" id="windowBadge">window: —</div>
+          </div>
+
+          <div class="playerGrid">
+            <div class="panel neonTile inner">
+              <div class="panelTitle">Description</div>
+              <div class="desc" id="pDesc">Выбери трек в Library.</div>
+            </div>
+
+            <div class="panel neonTile inner">
+              <div class="panelTitle">Timestamps</div>
+              <div class="chapters" id="chapters"></div>
+            </div>
+          </div>
+
+          <div class="row">
+            <button class="btn" id="yandexBtn">YANDEX</button>
+            <button class="btn" id="spotifyBtn">SPOTIFY</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- GAME -->
+      <section class="page" data-page="game">
+        <div class="card neonTile reflect">
+          <div class="kicker">GAME</div>
+          <div class="title softNeonText">В разработке</div>
+          <div class="subtitle">
+            “Твоя победа — моя песня”.
+            <br/>Здесь будет вход в игру и статус разработки.
+          </div>
+          <div class="row">
+            <button class="btn" data-go="home">BACK</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- GLOBAL MINI PLAYER (всегда играет) -->
+    <footer class="mini neonTile" id="mini">
+      <div class="miniLeft">
+        <div class="miniDot"></div>
+        <div class="miniMeta">
+          <div class="miniName" id="mName">No track</div>
+          <div class="miniHint" id="mHint">—</div>
+        </div>
+      </div>
+
+      <div class="miniCtrls">
+        <button class="chip" id="prev">Prev</button>
+        <button class="chip strong" id="toggle">Play</button>
+        <button class="chip" id="next">Next</button>
+      </div>
+
+      <div class="miniRight">
+        <audio id="audio" preload="metadata"></audio>
+      </div>
+    </footer>
   </div>
 
-  <script src="/ui.js" defer></script>
-  <script defer>
-    document.getElementById('enterBtn').onclick = () => window.BACKROOM_GO('/library.html');
-    document.getElementById('libBtn').onclick   = () => window.BACKROOM_GO('/library.html');
+  <script>
+    window.API_BASE = "https://backroom-server.onrender.com";
   </script>
+  <script src="/ui.js" defer></script>
 </body>
 </html>
