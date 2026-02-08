@@ -53,6 +53,24 @@ async function tick(){
     metaEl.textContent = 'offline';
   }
 }
+const body = document.body;
+
+statusEl.addEventListener('mouseenter', () => {
+  if (lastState?.isOpen) body.classList.add('hover-open');
+});
+
+statusEl.addEventListener('mouseleave', () => {
+  body.classList.remove('hover-open');
+});
+
+// для мобильных (tap)
+statusEl.addEventListener('touchstart', () => {
+  if (lastState?.isOpen) body.classList.add('hover-open');
+}, { passive:true });
+
+statusEl.addEventListener('touchend', () => {
+  body.classList.remove('hover-open');
+});
 
 setInterval(tick, 1000);
 tick();
