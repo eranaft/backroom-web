@@ -493,6 +493,7 @@ function playTrackById(id){
 
   audio.src = tk.url;
   audio.play().catch(()=>{});
+syncPlayUI();
 
   mName.textContent = tk.title;
   mHint.textContent = tk.hint || "—";
