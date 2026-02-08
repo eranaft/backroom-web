@@ -468,25 +468,6 @@ body{
   background: rgba(0,0,0,.12);
 }
 
-/* MINI: grid center (no jumping) */
-.mini{
-  width:min(1120px, 96vw);
-  height:66px;
-  padding: 0 14px;
-  gap:14px;
-
-  display:grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items:center;
-}
-.miniLeft{ min-width:0; justify-self:start; }
-.miniMeta{ min-width:0; }
-.miniName{ font-weight:300; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.miniHint{ margin-top:3px; font-size:11px; color: rgba(255,255,255,.44); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.miniCtrls{ justify-self:center; display:flex; gap:10px; }
-.miniRight{ justify-self:end; width:260px; }
-#audio{ width:100%; }
-
 .chip{
   height:36px;
   width:92px;
@@ -512,79 +493,6 @@ body{
   }
 }
 
-@media (max-width: 980px){
-  .playerGrid{ grid-template-columns: 1fr; }
-  .miniRight{ display:none; }
-  .title{ font-size:42px; }
-}
-
-/* ===== Mini player: neon scrub bar + icon controls ===== */
-.mini{
-  position: relative;
-  overflow: hidden;
-}
-
-/* тонкий неоновый "ползунок" сверху всей плитки */
-.mini::before{
-  content:"";
-  position:absolute;
-  left:12px;
-  right:12px;
-  top:10px;
-  height:2px;
-  border-radius:999px;
-  background: rgba(255,255,255,.08);
-  pointer-events:none;
-}
-
-/* Заполненная часть (переливающаяся) */
-.miniProgress{
-  position:absolute;
-  left:12px;
-  top:10px;
-  height:2px;
-  width: 0%;
-  border-radius:999px;
-  background: linear-gradient(90deg, var(--c1), var(--c2), var(--c3), var(--c4), var(--c5), var(--c1));
-  background-size: 240% 100%;
-  animation: progFlow 10s ease-in-out infinite;
-  box-shadow:
-    0 0 10px rgba(0,220,255,.18),
-    0 0 16px rgba(140,90,255,.12);
-  pointer-events:none;
-}
-@keyframes progFlow{
-  0%{ background-position: 0% 50%; }
-  50%{ background-position: 100% 50%; }
-  100%{ background-position: 0% 50%; }
-}
-
-/* Ползунок-ручка */
-.miniKnob{
-  position:absolute;
-  top:10px;
-  width:10px;
-  height:10px;
-  border-radius:999px;
-  transform: translate(-50%, -50%);
-  background: rgba(255,255,255,.86);
-  box-shadow:
-    0 0 10px rgba(0,220,255,.18),
-    0 0 18px rgba(255,80,160,.10);
-  opacity:.9;
-  pointer-events:none;
-}
-
-/* Зона для drag */
-.miniScrub{
-  position:absolute;
-  left:12px;
-  right:12px;
-  top:4px;
-  height:20px;
-  cursor:pointer;
-  touch-action: none;
-}
 
 /* Иконки */
 .iconBtn{
@@ -619,4 +527,182 @@ body{
 /* На touch убираем hover-движения */
 @media (hover:none){
   .iconBtn:hover{ transform:none; }
+}
+
+
+
+/* ===== MINI PLAYER (clean, right controls, no emoji) ===== */
+.mini{
+  position: relative;
+  width:min(1120px, 96vw);
+  height:72px;
+  padding: 18px 16px 12px;
+  display:grid;
+  grid-template-columns: 1fr auto;
+  align-items:center;
+  gap: 14px;
+  overflow:hidden;
+}
+
+.miniLeft{ min-width:0; }
+.miniMeta{ min-width:0; }
+.miniName{
+  font-weight:320;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.miniHint{
+  margin-top:4px;
+  font-size:11px;
+  color: rgba(255,255,255,.44);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* controls right */
+.miniCtrls{
+  justify-self:end;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+/* SVG buttons */
+.pBtn{
+  width:44px;
+  height:44px;
+  border-radius: 16px;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.14);
+  color: rgba(255,255,255,.86);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease;
+  user-select:none;
+}
+.pBtn:hover{ border-color: rgba(255,255,255,.16); transform: translateY(-1px); }
+.pBtn:active{ transform: translateY(0) scale(.99); }
+
+.pBtn .ico{
+  width:18px;
+  height:18px;
+  fill: rgba(255,255,255,.86);
+}
+
+/* MAIN play/pause */
+.pMain{
+  width:52px;
+  border-color: rgba(0,220,255,.18);
+  box-shadow: 0 0 18px rgba(0,220,255,.10);
+  position:relative;
+}
+
+/* subtle neon pulse ring */
+.pMain::after{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  border-radius: 18px;
+  opacity:0;
+  background: linear-gradient(120deg, var(--c1), var(--c2), var(--c3), var(--c4), var(--c5), var(--c1));
+  background-size: 320% 320%;
+  filter: blur(8px);
+  transition: opacity .22s ease;
+  pointer-events:none;
+}
+
+/* show pause icon only when playing */
+.pMain .pauseIco{ display:none; }
+.pMain.isPlaying .playIco{ display:none; }
+.pMain.isPlaying .pauseIco{ display:block; }
+
+/* play/pause animation */
+.pMain.isPlaying{
+  box-shadow:
+    0 0 14px rgba(0,220,255,.12),
+    0 0 26px rgba(140,90,255,.10);
+}
+.pMain.isPlaying::after{
+  opacity:.75;
+  animation: ringFlow 2.8s ease-in-out infinite;
+}
+@keyframes ringFlow{
+  0%{ background-position: 0% 50%; transform: scale(1.00); }
+  50%{ background-position: 100% 50%; transform: scale(1.03); }
+  100%{ background-position: 0% 50%; transform: scale(1.00); }
+}
+
+/* ==== SCRUB BAR (top neon line across entire tile) ==== */
+.miniScrub{
+  position:absolute;
+  left:14px;
+  right:14px;
+  top:10px;
+  height:18px;
+  cursor:pointer;
+  touch-action:none;
+}
+
+.miniTrack{
+  position:absolute;
+  left:0; right:0;
+  top:50%;
+  height:2px;
+  transform: translateY(-50%);
+  border-radius:999px;
+  background: rgba(255,255,255,.08);
+}
+
+.miniProgress{
+  position:absolute;
+  left:0;
+  top:50%;
+  height:2px;
+  transform: translateY(-50%);
+  width:0%;
+  border-radius:999px;
+  background: linear-gradient(90deg, var(--c1), var(--c2), var(--c3), var(--c4), var(--c5), var(--c1));
+  background-size: 240% 100%;
+  animation: progFlow 10s ease-in-out infinite;
+  box-shadow:
+    0 0 10px rgba(0,220,255,.16),
+    0 0 16px rgba(140,90,255,.10);
+}
+
+.miniKnob{
+  position:absolute;
+  top:50%;
+  left:0;
+  width:10px;
+  height:10px;
+  transform: translate(-50%, -50%);
+  border-radius:999px;
+  background: rgba(255,255,255,.88);
+  box-shadow:
+    0 0 10px rgba(0,220,255,.16),
+    0 0 18px rgba(255,80,160,.10);
+  opacity:.92;
+}
+
+@keyframes progFlow{
+  0%{ background-position: 0% 50%; }
+  50%{ background-position: 100% 50%; }
+  100%{ background-position: 0% 50%; }
+}
+
+/* audio right */
+.miniRight{ justify-self:end; width:260px; }
+#audio{ width:100%; }
+
+@media (max-width: 980px){
+  .miniRight{ display:none; }
+}
+
+/* avoid hover jumping on touch */
+@media (hover:none){
+  .pBtn:hover{ transform:none; }
 }
