@@ -115,16 +115,20 @@ function showPage(route, dir=0){
   // switch active
   if (cur) cur.classList.remove("active");
   next.classList.add("active");
-
+// FIX: после кадра убираем направляющие классы,
+// чтобы активная страница не "залипала" со смещением
+requestAnimationFrame(() => {
+  next.classList.remove("from-left", "from-right");
+});
   currentRoute = route;
   setActiveTab(route);
   history.replaceState(null, "", `#${route}`);
 
-  setTimeout(() => {
-    warpTarget = 0;
-    transitioning = false;
-  }, 560);
-}
+setTimeout(() => {
+  warpTarget = 0;
+  next.classList.remove("from-left", "from-right");
+  transitioning = false;
+}, 560)
 
 tabs.forEach(b => b.addEventListener("click", () => {
   const to = b.dataset.route;
