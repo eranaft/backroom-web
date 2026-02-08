@@ -24,10 +24,6 @@ const DICT = {
     in_dev: "В разработке",
     game_sub: "“Твоя победа — моя песня”.\nТут появится вход в игру и прогресс разработки.",
     back_home: "На главную",
-    prev: "Назад",
-    play: "Играть",
-    next: "Вперёд",
-    pause: "Пауза",
   },
   en: {
     tab_home: "Home",
@@ -51,10 +47,6 @@ const DICT = {
     in_dev: "In development",
     game_sub: "“Your win — my song”.\nProgress will be here.",
     back_home: "Back home",
-    prev: "Prev",
-    play: "Play",
-    next: "Next",
-    pause: "Pause",
   }
 };
 
@@ -88,6 +80,33 @@ const ORDER = ["home","library","player","game"];
 let currentRoute = "home";
 let transitioning = false;
 
+// индикатор вкладок — создаём ДО setActiveTab
+let indicator = null;
+if (tabsWrap){
+  const all = [...tabsWrap.querySelectorAll(".tabIndicator")];
+  if (all.length > 1) all.slice(1).forEach(n => n.remove()); // жёстко убираем дубли
+
+  indicator = tabsWrap.querySelector(".tabIndicator");
+  if (!indicator){
+    indicator = document.createElement("span");
+    indicator.className = "tabIndicator";
+    tabsWrap.appendChild(indicator);
+  }
+}
+
+function moveIndicatorToActive(){
+  if (!indicator || !tabsWrap) return;
+  const active = tabs.find(t => t.classList.contains("active")) || tabs[0];
+  if (!active) return;
+
+  const wrapRect = tabsWrap.getBoundingClientRect();
+  const r = active.getBoundingClientRect();
+
+  const left = r.left - wrapRect.left;
+  indicator.style.width = `${r.width}px`;
+  indicator.style.transform = `translateX(${left}px)`;
+}
+
 function setActiveTab(route){
   tabs.forEach(b => b.classList.toggle("active", b.dataset.route === route));
   requestAnimationFrame(moveIndicatorToActive);
@@ -103,22 +122,18 @@ function showPage(route, dir=0){
 
   transitioning = true;
 
-  // direction classes
   next.classList.remove("from-left","from-right");
   if (dir < 0) next.classList.add("from-left");
   if (dir > 0) next.classList.add("from-right");
 
-  // stars acceleration only
+  // stars acceleration
   warpTarget = 1;
   warpHold = Math.min(1.2, warpHold + 0.2);
 
   if (cur) cur.classList.remove("active");
   next.classList.add("active");
 
-  // FIX: remove direction classes after start
-  requestAnimationFrame(() => {
-    next.classList.remove("from-left","from-right");
-  });
+  requestAnimationFrame(() => next.classList.remove("from-left","from-right"));
 
   currentRoute = route;
   setActiveTab(route);
@@ -131,21 +146,18 @@ function showPage(route, dir=0){
   }, 560);
 }
 
-/* click tabs */
 tabs.forEach(b => b.addEventListener("click", () => {
   const to = b.dataset.route;
   const dir = Math.sign(ORDER.indexOf(to) - ORDER.indexOf(currentRoute));
   showPage(to, dir);
 }));
 
-/* click buttons */
 document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => {
   const to = b.dataset.go;
   const dir = Math.sign(ORDER.indexOf(to) - ORDER.indexOf(currentRoute));
   showPage(to, dir);
 }));
 
-/* init route */
 window.addEventListener("load", () => {
   const raw = (location.hash || "#home").replace(/^#/, "");
   const route = raw.includes("=") ? "home" : raw;
@@ -155,61 +167,35 @@ window.addEventListener("load", () => {
   requestAnimationFrame(moveIndicatorToActive);
 });
 
-/* swipe on stage */
-let sx=0, sy=0, swiping=false;
-stage.addEventListener("touchstart", (e)=>{
-  const t0 = e.touches?.[0];
-  if (!t0) return;
-  sx = t0.clientX; sy = t0.clientY; swiping = true;
-},{passive:true});
-
-stage.addEventListener("touchend", (e)=>{
-  if (!swiping) return;
-  swiping = false;
-  const t0 = e.changedTouches?.[0];
-  if (!t0) return;
-
-  const dx = t0.clientX - sx;
-  const dy = t0.clientY - sy;
-
-  // only horizontal swipe
-  if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy)*1.4){
-    const i = ORDER.indexOf(currentRoute);
-    const ni = dx < 0 ? Math.min(ORDER.length-1, i+1) : Math.max(0, i-1);
-    const dir = dx < 0 ? 1 : -1;
-    showPage(ORDER[ni], dir);
-  }
-},{passive:true});
-
-let indicator = null;
-if (tabsWrap){
-  // FIX: если вдруг уже есть 2+ индикатора — оставляем один
-  const all = [...tabsWrap.querySelectorAll(".tabIndicator")];
-  if (all.length > 1) all.slice(1).forEach(n => n.remove());
-
-  indicator = tabsWrap.querySelector(".tabIndicator");
-  if (!indicator){
-    indicator = document.createElement("span");
-    indicator.className = "tabIndicator";
-    tabsWrap.appendChild(indicator);
-  }
-}
-
-
-function moveIndicatorToActive(){
-  if (!indicator || !tabsWrap) return;
-  const active = tabs.find(t => t.classList.contains("active")) || tabs[0];
-  if (!active) return;
-
-  const wrapRect = tabsWrap.getBoundingClientRect();
-  const r = active.getBoundingClientRect();
-
-  const left = r.left - wrapRect.left;
-  indicator.style.width = `${r.width}px`;
-  indicator.style.transform = `translateX(${left}px)`;
-}
-
 window.addEventListener("resize", () => requestAnimationFrame(moveIndicatorToActive));
+
+/* swipe on stage */
+if (stage){
+  let sx=0, sy=0, swiping=false;
+
+  stage.addEventListener("touchstart", (e)=>{
+    const t0 = e.touches?.[0];
+    if (!t0) return;
+    sx = t0.clientX; sy = t0.clientY; swiping = true;
+  }, {passive:true});
+
+  stage.addEventListener("touchend", (e)=>{
+    if (!swiping) return;
+    swiping = false;
+    const t0 = e.changedTouches?.[0];
+    if (!t0) return;
+
+    const dx = t0.clientX - sx;
+    const dy = t0.clientY - sy;
+
+    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy)*1.4){
+      const i = ORDER.indexOf(currentRoute);
+      const ni = dx < 0 ? Math.min(ORDER.length-1, i+1) : Math.max(0, i-1);
+      const dir = dx < 0 ? 1 : -1;
+      showPage(ORDER[ni], dir);
+    }
+  }, {passive:true});
+}
 
 /* =========================
    Live parallax (reactive)
@@ -240,14 +226,15 @@ requestAnimationFrame(rafPar);
    Stars
 ========================= */
 const canvas = document.getElementById("stars");
-const ctx = canvas.getContext("2d", { alpha:true });
+const ctx = canvas?.getContext?.("2d", { alpha:true });
 
 let W=0,H=0,DPR=1, stars=[];
 let warp = 0;
 let warpTarget = 0;
 let warpHold = 0;
 
-function resize(){
+function resizeStars(){
+  if (!canvas || !ctx) return;
   DPR = Math.min(2, window.devicePixelRatio || 1);
   W = Math.floor(window.innerWidth);
   H = Math.floor(window.innerHeight);
@@ -269,10 +256,12 @@ function resize(){
     ph: Math.random()*Math.PI*2
   }));
 }
-window.addEventListener("resize", resize);
-resize();
+window.addEventListener("resize", resizeStars);
+resizeStars();
 
 function drawStars(ts){
+  if (!ctx) return;
+
   warp += (warpTarget - warp) * 0.10;
   if (warpTarget > 0.02) warpHold = Math.min(1.25, warpHold + 0.03);
   else warpHold = Math.max(0, warpHold - 0.05);
@@ -321,61 +310,16 @@ async function fetchState(){
 async function poll(){
   try{
     const st = await fetchState();
-    windowBadge.textContent = `window: ${st.windowId}`;
+    if (windowBadge) windowBadge.textContent = `window: ${st.windowId}`;
   }catch{}
 }
 setInterval(poll, 2000);
 poll();
 
-const mini = document.getElementById("mini");
-const scrub = document.getElementById("scrub");
-const prog = document.getElementById("prog");
-const knob = document.getElementById("knob");
-
-function setProg(p){
-  const clamped = Math.max(0, Math.min(1, p));
-  prog.style.width = `${clamped * 100}%`;
-
-  const r = scrub.getBoundingClientRect();
-  const x = r.width * clamped;
-  knob.style.left = `${x}px`;
-}
-
-audio.addEventListener("loadedmetadata", () => setProg(0));
-audio.addEventListener("timeupdate", () => {
-  if (!audio.duration) return;
-  setProg(audio.currentTime / audio.duration);
-});
-audio.addEventListener("ended", () => setProg(1));
-
-let dragging = false;
-function seekFromClientX(clientX){
-  const r = scrub.getBoundingClientRect();
-  const x = Math.max(0, Math.min(r.width, clientX - r.left));
-  const p = r.width ? (x / r.width) : 0;
-  setProg(p);
-  if (audio.duration) audio.currentTime = p * audio.duration;
-}
-
-scrub.addEventListener("pointerdown", (e) => {
-  dragging = true;
-  scrub.setPointerCapture(e.pointerId);
-  seekFromClientX(e.clientX);
-});
-scrub.addEventListener("pointermove", (e) => {
-  if (!dragging) return;
-  seekFromClientX(e.clientX);
-});
-scrub.addEventListener("pointerup", (e) => {
-  dragging = false;
-  try{ scrub.releasePointerCapture(e.pointerId); }catch{}
-});
-
-audio.addEventListener("loadedmetadata", () => setProg(0));
-audio.addEventListener("ended", () => setProg(1));
-
-
-
+/* =========================
+   Audio + Mini Player
+========================= */
+const audio = document.getElementById("audio");
 
 const mName = document.getElementById("mName");
 const mHint = document.getElementById("mHint");
@@ -383,6 +327,64 @@ const prevBtn = document.getElementById("prev");
 const nextBtn = document.getElementById("next");
 const toggleBtn = document.getElementById("toggle");
 
+const scrub = document.getElementById("scrub");
+const prog  = document.getElementById("prog");
+const knob  = document.getElementById("knob");
+
+function syncPlayUI(){
+  if (!toggleBtn || !audio) return;
+  if (audio.paused) toggleBtn.classList.remove("isPlaying");
+  else toggleBtn.classList.add("isPlaying");
+}
+
+function setProg(p){
+  if (!scrub || !prog || !knob) return;
+  const clamped = Math.max(0, Math.min(1, p));
+  prog.style.width = `${clamped * 100}%`;
+  const r = scrub.getBoundingClientRect();
+  knob.style.left = `${r.width * clamped}px`;
+}
+
+if (audio){
+  audio.addEventListener("loadedmetadata", () => setProg(0));
+  audio.addEventListener("timeupdate", () => {
+    if (!audio.duration) return;
+    setProg(audio.currentTime / audio.duration);
+  });
+  audio.addEventListener("ended", () => setProg(1));
+  audio.addEventListener("play", syncPlayUI);
+  audio.addEventListener("pause", syncPlayUI);
+}
+
+if (scrub && audio){
+  let draggingScrub = false;
+
+  function seekFromClientX(clientX){
+    const r = scrub.getBoundingClientRect();
+    const x = Math.max(0, Math.min(r.width, clientX - r.left));
+    const p = r.width ? (x / r.width) : 0;
+    setProg(p);
+    if (audio.duration) audio.currentTime = p * audio.duration;
+  }
+
+  scrub.addEventListener("pointerdown", (e) => {
+    draggingScrub = true;
+    scrub.setPointerCapture(e.pointerId);
+    seekFromClientX(e.clientX);
+  });
+  scrub.addEventListener("pointermove", (e) => {
+    if (!draggingScrub) return;
+    seekFromClientX(e.clientX);
+  });
+  scrub.addEventListener("pointerup", (e) => {
+    draggingScrub = false;
+    try{ scrub.releasePointerCapture(e.pointerId); }catch{}
+  });
+}
+
+/* =========================
+   Tracks
+========================= */
 const listEl = document.getElementById("list");
 const searchEl = document.getElementById("search");
 
@@ -422,32 +424,6 @@ const TRACKS = [
   },
 ];
 
-let dragging = false;
-
-function seekFromClientX(clientX){
-  const r = scrub.getBoundingClientRect();
-  const x = Math.max(0, Math.min(r.width, clientX - r.left));
-  const p = r.width ? (x / r.width) : 0;
-  setProg(p);
-  if (audio.duration) audio.currentTime = p * audio.duration;
-}
-
-scrub.addEventListener("pointerdown", (e) => {
-  dragging = true;
-  scrub.setPointerCapture(e.pointerId);
-  seekFromClientX(e.clientX);
-});
-
-scrub.addEventListener("pointermove", (e) => {
-  if (!dragging) return;
-  seekFromClientX(e.clientX);
-});
-
-scrub.addEventListener("pointerup", (e) => {
-  dragging = false;
-  try{ scrub.releasePointerCapture(e.pointerId); }catch{}
-});
-
 let filtered = [...TRACKS];
 let idx = -1;
 
@@ -486,35 +462,36 @@ function renderList(){
 }
 
 function playTrackById(id){
+  if (!audio) return;
   const i = TRACKS.findIndex(x => x.id === id);
   if (i === -1) return;
+
   idx = i;
   const tk = TRACKS[idx];
 
   audio.src = tk.url;
   audio.play().catch(()=>{});
-syncPlayUI();
+  syncPlayUI();
 
-  mName.textContent = tk.title;
-  mHint.textContent = tk.hint || "—";
+  if (mName) mName.textContent = tk.title;
+  if (mHint) mHint.textContent = tk.hint || "—";
 
-  pTitle.textContent = tk.title;
-  pDesc.textContent = tk.desc || t("desc_empty");
+  if (pTitle) pTitle.textContent = tk.title;
+  if (pDesc) pDesc.textContent = tk.desc || t("desc_empty");
 
-  chaptersEl.innerHTML = "";
-  (tk.chapters || []).forEach(ch => {
-    const c = document.createElement("div");
-    c.className = "chapter";
-    c.innerHTML = `<div class="time">${ch.t}</div><div class="note">${escapeHtml(ch.note||"")}</div>`;
-    c.onclick = () => { audio.currentTime = ch.s; audio.play().catch(()=>{}); };
-    chaptersEl.appendChild(c);
-  });
+  if (chaptersEl){
+    chaptersEl.innerHTML = "";
+    (tk.chapters || []).forEach(ch => {
+      const c = document.createElement("div");
+      c.className = "chapter";
+      c.innerHTML = `<div class="time">${ch.t}</div><div class="note">${escapeHtml(ch.note||"")}</div>`;
+      c.onclick = () => { audio.currentTime = ch.s; audio.play().catch(()=>{}); };
+      chaptersEl.appendChild(c);
+    });
+  }
 
-  yandexBtn.onclick = () => openLink(tk.yandex);
-  spotifyBtn.onclick = () => openLink(tk.spotify);
-
- toggleBtn.textContent = audio.paused ? "⏵" : "⏸";
-
+  if (yandexBtn) yandexBtn.onclick = () => openLink(tk.yandex);
+  if (spotifyBtn) spotifyBtn.onclick = () => openLink(tk.spotify);
 }
 
 function prev(){
@@ -528,27 +505,17 @@ function next(){
   playTrackById(TRACKS[idx].id);
 }
 
-prevBtn.onclick = prev;
-nextBtn.onclick = next;
+if (prevBtn) prevBtn.onclick = prev;
+if (nextBtn) nextBtn.onclick = next;
 
-function syncPlayUI(){
-  if (audio.paused) toggleBtn.classList.remove("isPlaying");
-  else toggleBtn.classList.add("isPlaying");
+if (toggleBtn && audio){
+  toggleBtn.onclick = () => {
+    if (!audio.src){ playTrackById(TRACKS[0].id); return; }
+    if (audio.paused) audio.play().catch(()=>{});
+    else audio.pause();
+    syncPlayUI();
+  };
 }
-
-toggleBtn.onclick = () => {
-  if (!audio.src){ playTrackById(TRACKS[0].id); return; }
-  if (audio.paused) audio.play().catch(()=>{});
-  else audio.pause();
-  syncPlayUI();
-};
-
-audio.addEventListener("play", syncPlayUI);
-audio.addEventListener("pause", syncPlayUI);
-
-
-audio.addEventListener("pause", () => toggleBtn.textContent = "⏵");
-audio.addEventListener("play", () => toggleBtn.textContent = "⏸");
 
 if (searchEl){
   searchEl.addEventListener("input", () => {
