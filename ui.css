@@ -821,7 +821,7 @@ body{
 
 @keyframes edgeFlow{
   0%{ background-position: 0% 50%; }
-}
+
 /* ===== EXTRA GRAPHICS (grid + grain) ===== */
 .bg-grid{
   position:fixed;
