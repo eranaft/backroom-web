@@ -6,6 +6,10 @@ const wrapEl = document.getElementById('wrap');
 const canvas = document.getElementById('stars');
 const ctx = canvas.getContext('2d', { alpha: true });
 
+function apiBase() {
+  return (window.API_BASE || '').trim().replace(/\/+$/, '');
+}
+
 function fmt(ms){
   const s = Math.max(0, Math.floor(ms / 1000));
   const hh = String(Math.floor(s / 3600)).padStart(2, '0');
@@ -14,79 +18,60 @@ function fmt(ms){
   return `${hh}:${mm}:${ss}`;
 }
 
-let lastState = { open:false, openUntil:0, now:Date.now() };
+let lastState = { isOpen:false, openUntil:0, now:Date.now(), windowId:"CLOSED" };
 
-function apiBase(){
-  return (window.API_BASE || '').trim().replace(/\/+$/, '');
-}
-
-/**
- * Ожидаем от Cloudflare Worker:
- * GET /lobby -> { open:boolean, openUntil:number, now:number }
- */
-async function fetchLobby(){
+async function fetchState(){
   const base = apiBase();
-  const r = await fetch(`${base}/lobby`, { cache: 'no-store' });
-  if (!r.ok) throw new Error(`HTTP ${r.status} /lobby`);
-  const j = await r.json();
-  // защита от кривого формата
-  return {
-    open: !!j.open,
-    openUntil: Number(j.openUntil || 0),
-    now: Number(j.now || Date.now()),
-  };
+  const r = await fetch(`${base}/state`, { cache: 'no-store' });
+  if (!r.ok) throw new Error(`HTTP ${r.status} /state`);
+  return r.json();
 }
 
 function render(st){
   lastState = st;
 
-  document.body.classList.toggle('is-closed', !st.open);
+  const open = !!st.isOpen;
 
-  if (st.open){
-    statusEl.textContent = 'OPEN';
-    statusEl.classList.remove('closed');
-    statusEl.classList.add('open');
-    statusEl.setAttribute('aria-disabled', 'false');
+  // жёстко выставляем только одно состояние
+  statusEl.classList.toggle('open', open);
+  statusEl.classList.toggle('closed', !open);
+  statusEl.textContent = open ? 'OPEN' : 'CLOSED';
+  statusEl.setAttribute('aria-disabled', open ? 'false' : 'true');
+
+  document.body.classList.toggle('is-closed', !open);
+
+  if (open) {
     timerEl.textContent = '';
+    metaEl.textContent = `lobby: OPEN`;
   } else {
-    statusEl.textContent = 'CLOSED';
-    statusEl.classList.remove('open');
-    statusEl.classList.add('closed');
-    statusEl.setAttribute('aria-disabled', 'true');
-
-    // когда закрыто, если openUntil в будущем — показываем таймер
-    if (st.openUntil && st.openUntil > Date.now()){
-      timerEl.textContent = fmt(st.openUntil - Date.now());
-    } else {
-      timerEl.textContent = '';
-    }
+    // таймер до закрытия/открытия: берём openUntil если он в будущем
+    const until = Number(st.openUntil || 0);
+    if (until > Date.now()) timerEl.textContent = fmt(until - Date.now());
+    else timerEl.textContent = '';
+    metaEl.textContent = `lobby: CLOSED`;
   }
-
-  // мета — без windowId
-  metaEl.textContent = `lobby: ${st.open ? 'OPEN' : 'CLOSED'}`;
 }
 
 async function tick(){
   try{
-    const st = await fetchLobby();
+    const st = await fetchState();
     render(st);
-  }catch(e){
+  } catch(e){
     metaEl.textContent = `offline: ${String(e.message || e)}`;
   }
 }
 
 /* ======================
-   Плавное включение эффектов
-   ====================== */
+   ЭФФЕКТЫ НА МАКС (разумно)
+====================== */
 const isTouchDevice = matchMedia('(pointer: coarse)').matches;
-
-let targetEngage = 0;  // 0..1 (хочу включить)
-let engage = 0;        // 0..1 (плавно включилось)
-
-let hold = 0;          // 0..1.6 (для “ускорения со временем”)
-let warp = 0;          // 0..1 (главный множитель)
+let targetEngage = 0;
+let engage = 0;
+let hold = 0;
+let warp = 0;
 let tiltX = 0, tiltY = 0;
 let lastTs = performance.now();
+let jumping = false;
 
 function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
 function smoothstep(t){ return t * t * (3 - 2 * t); }
@@ -94,56 +79,42 @@ function smoothstep(t){ return t * t * (3 - 2 * t); }
 function setVars(){
   document.body.style.setProperty('--warp', warp.toFixed(3));
 
-  // фон: ускорение мягкое и медленное
-  const baseSpeed = (lastState?.open ? 28 : 34);
-  const minSpeed  = (lastState?.open ? 18 : 30);
+  const open = !!lastState?.isOpen;
+  const baseSpeed = open ? 18 : 34;
+  const minSpeed  = open ? 10 : 30;
   const s = baseSpeed - (baseSpeed - minSpeed) * clamp(warp, 0, 1);
   document.body.style.setProperty('--bgSpeed', `${s.toFixed(2)}s`);
 
-  // hue тоже мягко
-  const hue = (lastState?.open ? (warp * 80) : 0);
+  const hue = open ? (warp * 120) : 0;
   document.body.style.setProperty('--bgHue', `${hue.toFixed(1)}deg`);
 
-  // наклон: только в engage
   document.body.style.setProperty('--tiltX', `${tiltX.toFixed(2)}deg`);
   document.body.style.setProperty('--tiltY', `${tiltY.toFixed(2)}deg`);
 
-  // мягкое усиление свечения текста
-  const glow = 0.10 + 0.08 * warp;
+  const glow = 0.12 + 0.10 * warp;
   document.body.style.setProperty('--textGlow', glow.toFixed(3));
 }
 
-/* ======================
-   ПК: эффекты только при наведении на OPEN
-   Мобилка: эффекты при движении пальцем по экрану (если OPEN)
-   ====================== */
 function enterFromOpen(){
-  if (lastState?.open) targetEngage = 1;
+  if (lastState?.isOpen) targetEngage = 1;
 }
 function leaveFromOpen(){
   targetEngage = 0;
 }
 
-statusEl.addEventListener('mouseenter', () => {
-  if (!isTouchDevice) enterFromOpen();
-});
-statusEl.addEventListener('mouseleave', () => {
-  if (!isTouchDevice) leaveFromOpen();
-});
+statusEl.addEventListener('mouseenter', () => { if (!isTouchDevice) enterFromOpen(); });
+statusEl.addEventListener('mouseleave', () => { if (!isTouchDevice) leaveFromOpen(); });
 
-// Tap по OPEN (мобилка): включаем, пока держит палец
 statusEl.addEventListener('touchstart', enterFromOpen, { passive:true });
 statusEl.addEventListener('touchend', leaveFromOpen, { passive:true });
 statusEl.addEventListener('touchcancel', leaveFromOpen, { passive:true });
 
-/* tilt: на ПК только когда навёл OPEN; на мобиле — когда водит пальцем */
 function applyPointerTilt(x, y){
   const r = wrapEl.getBoundingClientRect();
   const nx = (x - (r.left + r.width/2)) / (r.width/2);
   const ny = (y - (r.top + r.height/2)) / (r.height/2);
-
-  tiltY = clamp(nx, -1, 1) * 6;
-  tiltX = clamp(-ny, -1, 1) * 4;
+  tiltY = clamp(nx, -1, 1) * 7;
+  tiltX = clamp(-ny, -1, 1) * 5;
 }
 
 window.addEventListener('mousemove', (e) => {
@@ -155,25 +126,16 @@ window.addEventListener('mousemove', (e) => {
 window.addEventListener('touchmove', (e) => {
   const t = e.touches?.[0];
   if (!t) return;
-
-  // Мобилка: если OPEN, то движение пальца включает эффекты везде
-  if (lastState?.open) targetEngage = 1;
-
+  if (lastState?.isOpen) targetEngage = 1;
   applyPointerTilt(t.clientX, t.clientY);
 }, { passive:true });
 
-// отпустил палец — выключаем
-document.body.addEventListener('touchend', () => {
-  targetEngage = 0;
-}, { passive:true });
-
-document.body.addEventListener('touchcancel', () => {
-  targetEngage = 0;
-}, { passive:true });
+document.body.addEventListener('touchend', () => { targetEngage = 0; }, { passive:true });
+document.body.addEventListener('touchcancel', () => { targetEngage = 0; }, { passive:true });
 
 /* ======================
-   Canvas stars
-   ====================== */
+   Stars (MAX)
+====================== */
 let W=0, H=0, DPR=1;
 let stars = [];
 
@@ -188,15 +150,18 @@ function resize(){
   canvas.style.height = H + 'px';
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 
-  const count = Math.floor((W * H) / 12000);
+  // больше звёзд, но не убиваем мобилки
+  const density = isTouchDevice ? 15000 : 9000;
+  const count = Math.floor((W * H) / density);
+
   stars = new Array(count).fill(0).map(() => ({
     x: Math.random()*W,
     y: Math.random()*H,
-    r: 0.6 + Math.random()*1.5,
-    a: 0.10 + Math.random()*0.45,
-    vx: 0.18 + Math.random()*0.10,
-    vy: -0.06 + Math.random()*0.12,
-    tw: 0.45 + Math.random()*1.1,
+    r: 0.6 + Math.random()*1.8,
+    a: 0.12 + Math.random()*0.55,
+    vx: 0.18 + Math.random()*0.16,
+    vy: -0.08 + Math.random()*0.16,
+    tw: 0.50 + Math.random()*1.4,
     ph: Math.random()*Math.PI*2
   }));
 }
@@ -205,13 +170,11 @@ resize();
 
 function drawStars(ts){
   ctx.clearRect(0, 0, W, H);
+  const open = !!lastState?.isOpen;
 
-  const open = !!lastState?.open;
-
-  const baseSpeed = open ? 0.32 : 0.14;
-  const speed = baseSpeed + (open ? (engage * (0.55 + warp*0.55)) : 0);
-
-  const twMul = open ? 1.0 : 0.55;
+  const baseSpeed = open ? 0.40 : 0.16;
+  const speed = baseSpeed + (open ? (engage * (0.70 + warp*0.90)) : 0);
+  const twMul = open ? 1.15 : 0.60;
 
   for (const s of stars){
     s.x += s.vx * speed;
@@ -226,8 +189,8 @@ function drawStars(ts){
     const alpha = s.a * (0.62 + tw*0.38);
 
     const glow = open
-      ? `rgba(88,242,255,${alpha*0.08})`
-      : `rgba(255,110,120,${alpha*0.05})`;
+      ? `rgba(88,242,255,${alpha*0.10})`
+      : `rgba(255,110,120,${alpha*0.06})`;
 
     ctx.fillStyle = `rgba(255,255,255,${alpha})`;
     ctx.beginPath();
@@ -236,19 +199,16 @@ function drawStars(ts){
 
     ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.arc(s.x, s.y, s.r*2.8, 0, Math.PI*2);
+    ctx.arc(s.x, s.y, s.r*3.1, 0, Math.PI*2);
     ctx.fill();
   }
 }
 
 /* ======================
-   Переход в комнату: без пятна
-   ====================== */
-let jumping = false;
-
+   Jump to room
+====================== */
 statusEl.addEventListener('click', () => {
-  if (!lastState?.open || jumping) return;
-
+  if (!lastState?.isOpen || jumping) return;
   jumping = true;
   targetEngage = 1;
   hold = 1.6;
@@ -261,24 +221,22 @@ statusEl.addEventListener('click', () => {
 
 /* ======================
    Main loop
-   ====================== */
+====================== */
 function frame(ts){
   const dt = Math.min(0.05, (ts - lastTs)/1000);
   lastTs = ts;
 
-  const open = !!lastState?.open;
+  const open = !!lastState?.isOpen;
 
-  engage += (targetEngage - engage) * 0.08;
-
+  engage += (targetEngage - engage) * 0.09;
   const engaged = open && engage > 0.02;
 
-  if (engaged) hold = clamp(hold + dt*0.95, 0, 1.6);
-  else hold = clamp(hold - dt*1.35, 0, 1.6);
+  if (engaged) hold = clamp(hold + dt*1.05, 0, 1.6);
+  else hold = clamp(hold - dt*1.45, 0, 1.6);
 
   const t = smoothstep(hold/1.6);
-
-  const targetWarp = open ? clamp(0.05 + 0.75*t, 0, 1) * engage : 0;
-  warp += (targetWarp - warp) * 0.07;
+  const targetWarp = open ? clamp(0.08 + 0.82*t, 0, 1) * engage : 0;
+  warp += (targetWarp - warp) * 0.08;
 
   if (!engaged){
     tiltX *= 0.85;
@@ -287,19 +245,9 @@ function frame(ts){
 
   setVars();
   drawStars(ts);
-
   requestAnimationFrame(frame);
 }
 
 requestAnimationFrame(frame);
-
-// раз в 5 сек подтягиваем состояние с воркера
+setInterval(tick, 1000);
 tick();
-setInterval(tick, 5000);
-
-// таймер обновляем раз в 1 сек, чтобы был плавный
-setInterval(() => {
-  if (!lastState?.open && lastState?.openUntil > Date.now()) {
-    timerEl.textContent = fmt(lastState.openUntil - Date.now());
-  }
-}, 1000);
