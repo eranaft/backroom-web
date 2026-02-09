@@ -280,7 +280,8 @@
   async function pollState(){
     try{
       const st = await fetchState();
-      if (windowBadge) windowBadge.textContent = `window: ${st.windowId}`;
+      const wid = (st.windowId ?? (st.isOpen ? "OPEN" : (st.open ? "OPEN" : "CLOSED")));
+if (windowBadge) windowBadge.textContent = `window: ${wid}`;
     }catch{}
   }
   setInterval(pollState, 2000);
