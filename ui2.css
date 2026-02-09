@@ -818,7 +818,7 @@ body{
 
 
 /* ===== EXTRA GRAPHICS (grid + grain) ===== */
-/* .bg-grid{
+  .bg-grid{
   position:fixed;
   inset:0;
   pointer-events:none;
@@ -853,8 +853,4 @@ body{
   0%   { transform: translate3d(0,0,0); }
   100% { transform: translate3d(-60px,40px,0); }
 }
-*/
 
-.neonEdge{
-  outline: 3px solid red !important;
-}
