@@ -5,8 +5,18 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>BACKROOM</title>
 
-<link rel="stylesheet" href="/ui2.css">
-<script src="/ui.js?v=777" defer></script>
+  <link rel="stylesheet" href="/ui2.css">
+
+  <script>
+    // ВАЖНО: сюда ставим URL Cloudflare Worker (а не Render)
+    window.API_BASE = "PASTE_YOUR_WORKER_URL_HERE";
+  </script>
+
+  <!-- Твой текущий UI — не трогаем -->
+  <script src="/ui.js?v=777" defer></script>
+
+  <!-- Маленький адаптер: подтянет lobby state + current track (НЕ ломает ui.js) -->
+  <script src="/room.js?v=1" defer></script>
 </head>
 
 <body>
@@ -17,7 +27,7 @@
   <!-- графика -->
   <div class="bg-grid"></div>
   <div class="bg-grain"></div>
-  
+
   <div class="vignette"></div>
   <canvas id="stars"></canvas>
 
@@ -146,7 +156,6 @@
         <div class="miniHint" id="mHint">—</div>
       </div>
 
-      <!-- прогресс (внизу плитки, не поверх кнопок) -->
       <div class="miniScrub" id="scrub" aria-label="Полоса прогресса">
         <div class="miniTrack"></div>
         <div class="miniProgress" id="prog"></div>
@@ -179,10 +188,5 @@
       <audio id="audio" preload="metadata"></audio>
     </footer>
   </div>
-
-  <script>
-    // твой сервер Render
-    window.API_BASE = "https://backroom-server.onrender.com";
-  </script>
 </body>
 </html>
