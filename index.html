@@ -4,50 +4,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>BACKROOM</title>
-
-  <!-- ЛОББИ: используем lobby.css, а не ui.css -->
-  <link rel="stylesheet" href="/lobby.css?v=11" />
-
+  <link rel="stylesheet" href="/lobby.css?v=99" />
 </head>
 <body>
-  <!-- фон / аура -->
   <div class="bg-neon"></div>
   <div class="neonAura"></div>
-   <!-- графика -->
   <div class="bg-grid"></div>
   <div class="bg-grain"></div>
-  <!-- звёзды -->
   <canvas id="stars"></canvas>
 
-  <!-- контент -->
-  <main class="wrap" id="wrap">
-    <div id="status" class="status closed" aria-disabled="true">CLOSED</div>
-    <div id="timer" class="timer"></div>
-    <div class="meta" id="meta"></div>
-  </main>
-
-  <!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>BACKROOM</title>
-
-  <!-- ЛОББИ: используем lobby.css, а не ui.css -->
-  <link rel="stylesheet" href="/lobby.css?v=11" />
-
-</head>
-<body>
-  <!-- фон / аура -->
-  <div class="bg-neon"></div>
-  <div class="neonAura"></div>
-   <!-- графика -->
-  <div class="bg-grid"></div>
-  <div class="bg-grain"></div>
-  <!-- звёзды -->
-  <canvas id="stars"></canvas>
-
-  <!-- контент -->
   <main class="wrap" id="wrap">
     <div id="status" class="status closed" aria-disabled="true">CLOSED</div>
     <div id="timer" class="timer"></div>
@@ -55,15 +20,10 @@
   </main>
 
   <script>
-  window.API_BASE = "https://backroom-bot.kramskoyegor321.workers.dev";
-</script>
+    // ВАЖНО: сюда вставишь URL воркера, например: https://backroom-bot.xxx.workers.dev
+    window.API_BASE = "https://backroom-bot.kramskoyegor321.workers.dev/";
+  </script>
 
-  <!-- ЛОББИ-логика -->
-  <script src="/app.js?v=11" defer></script>
-</body>
-</html>
-
-  <!-- ЛОББИ-логика -->
-  <script src="/app.js?v=11" defer></script>
+  <script src="/app.js?v=99" defer></script>
 </body>
 </html>
