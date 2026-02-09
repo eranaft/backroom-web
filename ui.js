@@ -35,6 +35,15 @@
   const ctrlsEl = $("#miniCtrls") || $(".miniCtrls");
   const audio  = $("#audio");
 
+  function setCtrlWidthVar(){
+    if (!mini) return;
+    const w = (ctrlsEl?.getBoundingClientRect?.().width || 170);
+    mini.style.setProperty("--ctrlW", `${Math.ceil(w)}px`);
+  }
+  window.addEventListener("resize", setCtrlWidthVar);
+  setTimeout(setCtrlWidthVar, 0);
+
+
   /* ===== ROUTER ===== */
   const ORDER = ["home","library","player","game"];
   let route = "home";
