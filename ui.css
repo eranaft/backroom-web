@@ -852,3 +852,7 @@ body{
   100% { transform: translate3d(-60px,40px,0); }
 }
 */
+
+.neonEdge{
+  outline: 3px solid red !important;
+}
