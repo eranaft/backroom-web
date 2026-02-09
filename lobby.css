@@ -197,17 +197,17 @@ body.jumping .jumpFx{ display:none !important; }
 
 /* ===== EXTRA GRAPHICS (grid + grain) ===== */
 .bg-grid{
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-  opacity:.10;
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2; /* поверх фона, под контентом */
+  opacity: .12;
   mix-blend-mode: screen;
   background:
     repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 1px, transparent 1px 60px),
     repeating-linear-gradient(0deg,  rgba(255,255,255,.05) 0 1px, transparent 1px 60px);
-  transform: translate3d(0,0,0);
   animation: gridDrift 22s linear infinite;
-  will-change: transform, opacity;
+  will-change: transform;
 }
 
 @keyframes gridDrift{
@@ -216,14 +216,14 @@ body.jumping .jumpFx{ display:none !important; }
 }
 
 .bg-grain{
-  position:fixed;
-  inset:-20%;
-  pointer-events:none;
-  opacity:.08;
+  position: fixed;
+  inset: -20%;
+  pointer-events: none;
+  z-index: 3;
+  opacity: .09;
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.45'/%3E%3C/svg%3E");
   background-size: 180px 180px;
-  transform: translate3d(0,0,0);
   animation: grainMove 1.8s steps(6) infinite;
 }
 
@@ -231,8 +231,4 @@ body.jumping .jumpFx{ display:none !important; }
   0%   { transform: translate3d(0,0,0); }
   100% { transform: translate3d(-60px,40px,0); }
 }
-
-/* CLOSED — чуть тише */
-body.is-closed .bg-grid{ opacity:.06; }
-body.is-closed .bg-grain{ opacity:.06; }
 
