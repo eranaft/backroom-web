@@ -309,6 +309,7 @@ body{
 
 /* ===== НЕОНОВЫЕ “ЛАМПЫ” ПО КРАЯМ (движущаяся обводка + рассеивание) ===== */
 .neonEdge{
+  position: relative;
   --edgeA: rgba(0,220,255,.72);
   --edgeB: rgba(140,90,255,.62);
   --edgeC: rgba(255,80,160,.52);
@@ -316,8 +317,7 @@ body{
   --edgeE: rgba(40,255,160,.42);
 }
 
-/* граница с “текущим светом” */
-/* ===== НЕОНОВЫЕ “ЛАМПЫ” ПО КРАЯМ (НЕ КРУТИМ, А ПЕРЕЛИВАЕМ) ===== */
+/* лампы по краям */
 .neonEdge::after{
   content:"";
   position:absolute;
@@ -349,16 +349,13 @@ body{
     drop-shadow(0 0 22px rgba(255,80,160,.08));
 }
 
-/* рассеивание как от ламп */
-.neonEdge > *{}
-.neonEdge::marker{ content:""; }
-
-.neonEdgeGlow{
-  pointer-events:none;
+@keyframes edgeFlow{
+  0%{ background-position: 0% 50%; }
+  50%{ background-position: 100% 50%; }
+  100%{ background-position: 0% 50%; }
 }
 
-.neonEdge::selection{ background: transparent; }
-
+/* рассеивание */
 .neonEdge::before{
   content:"";
   position:absolute;
@@ -373,10 +370,6 @@ body{
   opacity:.55;
   animation: edgeGlowBreath 7s ease-in-out infinite;
   pointer-events:none;
-}
-
-50%{ background-position: 100% 50%; }
-  100%{ background-position: 0% 50%; }
 }
 
 @keyframes edgeGlowBreath{
